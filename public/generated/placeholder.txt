@@ -1,0 +1,5 @@
+# Generated Audio Files
+
+This directory will contain the generated audio files created by mixing stems.
+
+Files are named using a hash of the user's biometric data to ensure consistent generation.

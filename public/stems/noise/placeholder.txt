@@ -1,0 +1,5 @@
+# Melody Stems
+
+Upload your melody audio files here, named 1.wav through 5.wav.
+
+These will be used for the melodic elements of the generated tracks.

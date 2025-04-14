@@ -1,0 +1,5 @@
+# Pad Stems
+
+Upload your pad audio files here, named 1.wav through 5.wav.
+
+These will be used for the ambient/background textures of the generated tracks.
