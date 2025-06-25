@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function POST(request: Request) {
+  const body = await request.json();
+  const { testValue } = body;
+
   return NextResponse.json({
-    success: true,
-    message: "API is working",
-    timestamp: new Date().toISOString(),
-  })
+    message: `Test route received: ${testValue}`,
+  });
 }
