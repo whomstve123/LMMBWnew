@@ -53,16 +53,26 @@ async function selectStemsFromHash(faceHash: string) {
       limit: 100,
     });
 
-    if (error || !data || data.length === 0) {
-      console.warn(`No stems found for category ${category}.`);
+    console.log(`Category: ${category}`);
+    if (error) {
+      console.error(`Supabase error for category ${category}:`, error);
+    }
+    if (!data) {
+      console.warn(`No data returned for category ${category}.`);
+      continue;
+    }
+    console.log(`All files in ${category}:`, data.map(f => f.name));
+
+    const files = data.filter((f) => f.name.endsWith(".wav") || f.name.endsWith(".mp3"));
+    console.log(`Filtered audio files in ${category}:`, files.map(f => f.name));
+    if (files.length === 0) {
+      console.warn(`No audio files found in ${category} after filtering.`);
       continue;
     }
 
-    const files = data.filter((f) => f.name.endsWith(".wav") || f.name.endsWith(".mp3"));
-    if (files.length === 0) continue;
-
     const selectedIndex = hashNum % files.length;
     const selectedFile = files[selectedIndex].name;
+    console.log(`Selected file for ${category}:`, selectedFile);
 
     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${category}/${selectedFile}`;
     selectedStems[category] = publicUrl;
