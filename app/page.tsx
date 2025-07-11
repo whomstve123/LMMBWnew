@@ -21,7 +21,7 @@ export default function Home() {
   const [noFaceWarning, setNoFaceWarning] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const webcamRef = useRef<WebcamRef>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
   const router = useRouter()
 
   useEffect(() => {

@@ -7,7 +7,14 @@ import path from "path"
 
 const execPromise = promisify(exec)
 const STEM_CATEGORIES = ["drums", "pads", "bass", "noise"]
-const SUPABASE_BASE_URL = "https://stvydnlkuyjdcfgroqaw.supabase.co/storage/v1/object/public/stems"
+const SUPABASE_URL = process.env.SUPABASE_URL
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error("Supabase environment variables are missing. Please set SUPABASE_URL and SUPABASE_ANON_KEY.")
+}
+
+const SUPABASE_BASE_URL = `${SUPABASE_URL}/storage/v1/object/public/stems`
 
 export async function POST(request: Request) {
   try {
