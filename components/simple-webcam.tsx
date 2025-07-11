@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from "re
 interface SimpleWebcamProps {
   onCapture: (imageSrc: string) => void
   onFaceDetected?: (faceHash: string) => void
-  videoRef?: React.RefObject<HTMLVideoElement | null>
+  videoRef?: React.RefObject<HTMLVideoElement>
 }
 
 // Define a ref type that exposes the capturePhoto method
