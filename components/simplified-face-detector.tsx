@@ -4,7 +4,7 @@ import type React from "react"
 import { useRef, useState, useEffect } from "react"
 
 interface SimplifiedFaceDetectorProps {
-  videoRef: React.RefObject<HTMLVideoElement>
+  videoRef: React.RefObject<HTMLVideoElement | null>
   onFaceDetected: (faceHash: string) => void
   onNoFaceDetected: () => void
   isCapturing: boolean
