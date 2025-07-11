@@ -8,6 +8,8 @@ import path from "path"
 const execPromise = promisify(exec)
 const STEM_CATEGORIES = ["drums", "pads", "bass", "noise"]
 const SUPABASE_URL = process.env.SUPABASE_URL
+console.log('DEBUG: SUPABASE_URL:', SUPABASE_URL)
+console.log('DEBUG: SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY)
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
