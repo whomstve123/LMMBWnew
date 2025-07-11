@@ -7,13 +7,13 @@ import path from "path";
 import { promisify } from "util";
 import { v4 as uuidv4 } from "uuid";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const SUPABASE_URL = process.env.SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!;
 const BUCKET_NAME = "stems";
 
 const STEM_CATEGORIES = ["pads", "bass", "noise"];
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const execPromise = promisify(exec);
 
 export async function POST(request: Request) {
