@@ -33,10 +33,12 @@ export async function POST(request: Request) {
 
     // Call external mixing API
     const mixingApiUrl = "https://mixing-api.onrender.com/mix"; // <-- Actual Render URL
+    // Convert selectedStems object to array of URLs in the order of STEM_CATEGORIES
+    const stemsArray = STEM_CATEGORIES.map((cat) => selectedStems[cat]).filter(Boolean);
     const response = await fetch(mixingApiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stems: selectedStems })
+      body: JSON.stringify({ stems: stemsArray })
     });
     if (!response.ok) {
       throw new Error("Mixing API failed");
