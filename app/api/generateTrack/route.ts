@@ -41,6 +41,8 @@ export async function POST(request: Request) {
       body: JSON.stringify({ stems: stemsArray })
     });
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Mixing API error response:", errorText);
       throw new Error("Mixing API failed");
     }
     const mixedBuffer = await response.arrayBuffer();
