@@ -55,6 +55,7 @@ export async function POST(request: Request) {
       { contentType: "audio/mpeg", upsert: true }
     );
     if (uploadError) {
+      console.error("Supabase upload error:", uploadError);
       throw new Error("Failed to upload generated track");
     }
 
