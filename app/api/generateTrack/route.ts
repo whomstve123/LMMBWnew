@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     // Call external mixing API
-    const mixingApiUrl = "https://YOUR-MIXING-API.onrender.com/mix"; // <-- Replace with your actual Render URL
+    const mixingApiUrl = "https://mixing-api.onrender.com/mix"; // <-- Actual Render URL
     const response = await fetch(mixingApiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
