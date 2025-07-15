@@ -31,9 +31,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No stems available" }, { status: 500 });
     }
 
-    const combinedTrackUrl = await mixAndStoreStems(selectedStems, trackId);
+    // Call external mixing API
+    const mixingApiUrl = "https://YOUR-MIXING-API.onrender.com/mix"; // <-- Replace with your actual Render URL
+    const response = await fetch(mixingApiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stems: selectedStems })
+    });
+    if (!response.ok) {
+      throw new Error("Mixing API failed");
+    }
+    const mixedBuffer = await response.arrayBuffer();
 
-    return NextResponse.json({ success: true, stems: selectedStems, trackId, audioUrl: combinedTrackUrl });
+    // Upload mixedBuffer to Supabase Storage
+    const fileName = `${trackId}.mp3`;
+    const { data, error: uploadError } = await supabase.storage.from("generated").upload(
+      fileName,
+      mixedBuffer,
+      { contentType: "audio/mpeg", upsert: true }
+    );
+    if (uploadError) {
+      throw new Error("Failed to upload generated track");
+    }
+
+    const { publicUrl } = supabase.storage.from("generated").getPublicUrl(fileName).data;
+    return NextResponse.json({ success: true, stems: selectedStems, trackId, audioUrl: publicUrl });
   } catch (error) {
     console.error("Track generation error:", error);
     return NextResponse.json({ error: "Failed to generate track" }, { status: 500 });
@@ -82,38 +104,6 @@ async function selectStemsFromHash(faceHash: string) {
 }
 
 async function mixAndStoreStems(stems: Record<string, string>, trackId: string) {
-  const tempDir = path.join("/tmp", uuidv4());
-  await fs.mkdir(tempDir, { recursive: true });
-
-  const downloadedPaths: string[] = [];
-
-  for (const [category, url] of Object.entries(stems)) {
-    const res = await fetch(url);
-    const arrayBuffer = await res.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const localPath = path.join(tempDir, `${category}.wav`);
-    await fs.writeFile(localPath, buffer);
-    downloadedPaths.push(localPath);
-  }
-
-  const outputPath = path.join(tempDir, `${trackId}.mp3`);
-  const inputArgs = downloadedPaths.map(p => `-i "${p}"`).join(" ");
-  const filterArgs = downloadedPaths.map((_, i) => `[${i}:a]`).join("") + `amix=inputs=${downloadedPaths.length}:duration=longest`;
-
-  const command = `ffmpeg ${inputArgs} -filter_complex "${filterArgs}" -c:a libmp3lame -q:a 4 "${outputPath}"`;
-  await execPromise(command);
-
-  const fileBuffer = await fs.readFile(outputPath);
-  const fileName = `${trackId}.mp3`;
-  const { data, error } = await supabase.storage.from("generated").upload(fileName, fileBuffer, {
-    contentType: "audio/mpeg",
-    upsert: true,
-  });
-
-  if (error) {
-    throw new Error("Failed to upload generated track");
-  }
-
-  const { publicUrl } = supabase.storage.from("generated").getPublicUrl(fileName).data;
-  return publicUrl;
+  // This function is now unused; mixing is done via external API
+  return null;
 }
