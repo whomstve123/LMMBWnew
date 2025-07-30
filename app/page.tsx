@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import CaptureAnimation from "@/components/capture-animation"
+import GlitchOverlay from "@/components/glitch-overlay"
 import type { WebcamRef } from "@/components/simple-webcam"
 
 const SimpleWebcam = dynamic(() => import("@/components/simple-webcam"), {
@@ -17,7 +18,8 @@ export default function Home() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [showAnimation, setShowAnimation] = useState(false)
   const [faceHash, setFaceHash] = useState<string | null>(null)
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [isCapturing, setIsCapturing] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
   const [noFaceWarning, setNoFaceWarning] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const webcamRef = useRef<WebcamRef>(null)
@@ -25,12 +27,12 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
+    // Clear any existing session data on page load to ensure fresh start
     if (typeof window !== "undefined") {
-      const storedHash = sessionStorage.getItem("faceHash")
-      if (storedHash) {
-        console.log("Found existing hash in sessionStorage")
-        setFaceHash(storedHash)
-      }
+      sessionStorage.removeItem("faceHash")
+      sessionStorage.removeItem("audioUrl")
+      sessionStorage.removeItem("userEmail")
+      setFaceHash(null) // Ensure we start with no face hash
     }
   }, [])
 
@@ -40,7 +42,7 @@ export default function Home() {
 
   const handleCaptureClick = async () => {
     setShowAnimation(true)
-    setIsProcessing(true)
+    setIsCapturing(true)
     setNoFaceWarning(false)
 
     if (webcamRef.current) {
@@ -54,7 +56,7 @@ export default function Home() {
 
   const handleAnimationComplete = () => {
     setShowAnimation(false)
-    setIsProcessing(false)
+    setIsCapturing(false)
   }
 
   const handleFaceDetected = (hash: string) => {
@@ -65,13 +67,13 @@ export default function Home() {
 
   const handleNoFaceDetected = () => {
     setNoFaceWarning(true)
-    setIsProcessing(false)
+    setIsCapturing(false)
   }
 
   const handleProceed = async () => {
     if (!faceHash) return
 
-    setIsProcessing(true)
+    setIsGenerating(true)
     setErrorMessage(null)
 
     try {
@@ -92,8 +94,7 @@ export default function Home() {
     } catch (err: any) {
       console.error(err)
       setErrorMessage("Something went wrong while generating your track. Please try again.")
-    } finally {
-      setIsProcessing(false)
+      setIsGenerating(false)
     }
   }
 
@@ -108,8 +109,8 @@ export default function Home() {
         </div>
 
         <div className="relative flex justify-center items-center">
-          <div className="absolute left-[120px] top-1/2 -translate-y-1/2 transform -rotate-90 origin-center whitespace-nowrap text-2xl md:text-3xl font-gothic text-[#2d2d2d] hidden md:block">
-            <div className="text-center tracking-tight leading-none">
+          <div className="absolute left-[40px] top-1/2 -translate-y-1/2 transform -rotate-90 origin-center whitespace-nowrap text-2xl md:text-3xl font-gothic text-[#2d2d2d] hidden md:block">
+            <div className="text-center tracking-extra-wide leading-none">
               THE MIND UN-WANDERER IS THE FIRST
               <br />
               DEVICE OF ITS KIND WHICH PROMISES TO
@@ -132,10 +133,10 @@ export default function Home() {
                     fill="transparent"
                   />
                 </defs>
-                <text className="text-[8px] font-circularText">
-                  <textPath xlinkHref="#circlePath" startOffset="0%" className="text-[#2d2d2d]">
-                    place your face................................within the
-                    oval.......................................
+                <text className="text-[10px]" style={{ fontFamily: 'var(--font-legend-script)' }}>
+                  <textPath xlinkHref="#circlePath" startOffset="0%" className="text-[#2d2d2d]" style={{ fontFamily: 'var(--font-legend-script)' }}>
+                    place your face..................................................................within the
+                    oval..................................................................
                   </textPath>
                 </text>
               </svg>
@@ -150,6 +151,7 @@ export default function Home() {
                   onFaceDetected={handleFaceDetected}
                 />
                 <CaptureAnimation isVisible={showAnimation} onAnimationComplete={handleAnimationComplete} />
+                <GlitchOverlay isVisible={isGenerating} />
                 {showAnimation && (
                   <SimplifiedFaceDetector
                     videoRef={videoRef}
@@ -162,8 +164,8 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="absolute right-[120px] top-1/2 -translate-y-1/2 transform rotate-90 origin-center whitespace-nowrap text-2xl md:text-3xl font-gothic text-[#2d2d2d] hidden md:block">
-            <div className="text-center tracking-tight leading-none">
+          <div className="absolute right-[40px] top-1/2 -translate-y-1/2 transform rotate-90 origin-center whitespace-nowrap text-2xl md:text-3xl font-gothic text-[#2d2d2d] hidden md:block">
+            <div className="text-center tracking-extra-wide leading-none">
               JILL BLUTT&apos;S GROUNDBREAKING
               <br />
               TECHNOLOGY UTILIZES BIOMETRIC FACTIAL-
@@ -191,17 +193,17 @@ export default function Home() {
             <button
               onClick={handleCaptureClick}
               className="px-12 py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic hover:bg-[#2d2d2d] hover:text-[#e8e6d9] transition-colors"
-              disabled={isProcessing}
+              disabled={isCapturing}
             >
-              {isProcessing ? "PROCESSING..." : "CAPTURE"}
+              {isCapturing ? "PROCESSING..." : "CAPTURE"}
             </button>
           ) : (
             <button
               onClick={handleProceed}
               className="px-12 py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic hover:bg-[#2d2d2d] hover:text-[#e8e6d9] transition-colors"
-              disabled={isProcessing}
+              disabled={isGenerating}
             >
-              {isProcessing ? "GENERATING..." : "PROCEED"}
+              {isGenerating ? "GENERATING..." : "PROCEED"}
             </button>
           )}
         </div>

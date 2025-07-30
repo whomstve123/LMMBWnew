@@ -12,7 +12,8 @@ const config: Config = {
     extend: {
       fontFamily: {
         gothic: ["var(--font-bebas-neue)"],
-        legend: ["var(--font-lugrasimo)"],
+        legend: ["var(--font-legend-script)"],
+        legendScript: ["var(--font-legend-script)"],
         circularText: ["var(--font-lugrasimo)"],
       },
       colors: {

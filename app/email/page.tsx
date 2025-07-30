@@ -50,7 +50,7 @@ export default function EmailPage() {
         throw new Error("Failed to submit")
       }
 
-      // Redirect to the sound generation page
+      // Redirect immediately to your-sound page
       router.push("/your-sound")
     } catch (err) {
       console.error("Submission error:", err)

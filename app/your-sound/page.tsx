@@ -2,11 +2,14 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
+import ProgressivePixelOverlay from "@/components/progressive-pixel-overlay"
+import CustomAudioPlayer from "@/components/custom-audio-player"
 
 export default function YourSoundPage() {
   const [faceHash, setFaceHash] = useState<string | null>(null)
   const [trackId, setTrackId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showProgressiveAnimation, setShowProgressiveAnimation] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
@@ -59,9 +62,13 @@ export default function YourSoundPage() {
       setTrackId(data.trackId)
       setAudioUrl(data.audioUrl)
       setSelectedStems(data.selectedStems)
+      
+      // Don't hide progressive animation yet - wait for media to load
     } catch (err) {
       console.error("Track generation error:", err)
       setError(`Failed to generate your sound: ${err instanceof Error ? err.message : String(err)}`)
+      // Hide progressive animation on error
+      setShowProgressiveAnimation(false)
     } finally {
       setIsLoading(false)
     }
@@ -69,10 +76,27 @@ export default function YourSoundPage() {
 
   const handleRetry = () => {
     setRetryCount((prev) => prev + 1)
+    setShowProgressiveAnimation(true)
+    setError(null)
+  }
+
+  const handleAudioLoaded = () => {
+    // Hide the progressive animation when audio is ready to play
+    setShowProgressiveAnimation(false)
+  }
+
+  const handleAnimationComplete = () => {
+    // Called when the progress reaches 100% and animation is done
+    setShowProgressiveAnimation(false)
   }
 
   return (
-    <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-16">
+    <>
+      <ProgressivePixelOverlay 
+        isVisible={showProgressiveAnimation}
+        onComplete={handleAnimationComplete}
+      />
+      <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-16">
       <div className="w-full max-w-6xl mx-auto relative">
         {/* Title */}
         <div className="text-center mb-8">
@@ -89,24 +113,21 @@ export default function YourSoundPage() {
               <h2 className="text-3xl font-gothic text-[#2d2d2d] mb-6">THIS SOUND WAS MADE FOR YOU</h2>
 
               {isLoading ? (
-                <div className="py-8 text-[#2d2d2d] font-gothic">GENERATING YOUR UNIQUE SOUND...</div>
+                <div className="py-8 text-[#2d2d2d] font-gothic">LOADING YOUR UNIQUE SOUND...</div>
               ) : (
                 <div className="space-y-6">
-                  <div className="bg-[#2d2d2d] p-4 rounded-lg">
-                    {error && <p className="text-red-400 mb-2 text-sm">{error}</p>}
-                    {audioUrl && (
-                      <audio
-                        ref={audioRef}
-                        src={audioUrl}
-                        controls
-                        className="w-full"
-                        onError={(e) => {
-                          console.error("Audio playback error:", e)
-                          setError("Error playing audio. Please try again.")
-                        }}
-                      />
-                    )}
-                  </div>
+                  {error && <p className="text-red-400 mb-2 text-sm">{error}</p>}
+                  {audioUrl && (
+                    <CustomAudioPlayer
+                      src={audioUrl}
+                      onLoadedData={handleAudioLoaded}
+                      onError={(e) => {
+                        console.error("Audio playback error:", e)
+                        setError("Error playing audio. Please try again.")
+                        setShowProgressiveAnimation(false)
+                      }}
+                    />
+                  )}
 
                   {emailSent && (
                     <p className="text-[#2d2d2d] text-sm">A download link has been sent to your email address.</p>
@@ -140,5 +161,6 @@ export default function YourSoundPage() {
         </div>
       </div>
     </main>
+    </>
   )
 }

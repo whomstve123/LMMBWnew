@@ -1,6 +1,6 @@
 import type React from "react"
 import "./globals.css"
-import { bebasNeue, lugrasimo } from "./fonts"
+import { bebasNeue, lugrasimo, legendScript } from "./fonts"
 
 export default function RootLayout({
   children,
@@ -9,7 +9,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${bebasNeue.variable} ${lugrasimo.variable}`}>{children}</body>
+      <body className={`${bebasNeue.variable} ${lugrasimo.variable} ${legendScript.variable}`}>{children}</body>
     </html>
   )
 }
