@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Test email sent successfully!",
+      message: "Test email sent successfully",
       details: emailResult,
       nextSteps: [
         "Check your email inbox (and spam folder)",

@@ -64,7 +64,7 @@ export async function POST(request: Request) {
             audioUrl: existingMapping.audio_url,
             cached: true,
             accessCount: existingMapping.generated_count + 1,
-            message: "Welcome back! Here's your unique sound - same face, same track."
+            message: "Generated your unique sound based on your biometric data. This track is now permanently linked to your face."
           });
         } else {
           console.log(`Database mapping exists but file missing, regenerating...`);
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
         trackId, 
         audioUrl: publicUrl,
         cached: true,
-        message: "Your unique sound - same face, same track!"
+        message: "Generated your unique sound based on your biometric data. This track is now permanently linked to your face."
       });
     }
 
@@ -182,7 +182,7 @@ export async function POST(request: Request) {
       audioUrl: publicUrl,
       cached: false,
       accessCount: 1,
-      message: "Generated your unique sound based on your biometric data! This track is now permanently linked to your face."
+      message: "Generated your unique sound based on your biometric data. This track is now permanently linked to your face."
     });
 
   } catch (error) {
