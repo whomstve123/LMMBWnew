@@ -22,6 +22,7 @@ export default function ValidatedFaceDetector({
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isDetecting, setIsDetecting] = useState(false)
+  const [scanStage, setScanStage] = useState(0)
   const [useFallback, setUseFallback] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const detectionRef = useRef<NodeJS.Timeout | null>(null)
@@ -146,22 +147,83 @@ export default function ValidatedFaceDetector({
     }
   }, [videoRef])
 
-  // Start face detection when capturing
+  // Start multi-scan averaging when capturing
   useEffect(() => {
     if (isCapturing && !isLoading && videoRef.current) {
-      if (useFallback) {
-        detectFaceFallback()
-      } else {
-        detectFace()
-      }
+      runMultiScan()
     }
-
     return () => {
       if (detectionRef.current) {
         clearTimeout(detectionRef.current)
       }
     }
   }, [isCapturing, isLoading, useFallback])
+
+  // Multi-scan averaging logic
+  const runMultiScan = async () => {
+    setIsDetecting(true)
+    setScanStage(1)
+    setError(null)
+    let descriptors: Float32Array[] = []
+    for (let i = 1; i <= 3; i++) {
+      setScanStage(i)
+      try {
+        if (useFallback) {
+          // fallback: just wait and skip
+          await new Promise(res => setTimeout(res, 500))
+        } else {
+          const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+          const detection = await faceapi.detectSingleFace(videoRef.current, options)
+          if (detection) {
+            const fullResult = await faceapi
+              .detectSingleFace(videoRef.current, options)
+              .withFaceLandmarks()
+              .withFaceDescriptor()
+            if (fullResult && fullResult.descriptor) {
+              descriptors.push(fullResult.descriptor as Float32Array)
+            } else {
+              setError("Could not extract face descriptor. Please try again.")
+              setIsDetecting(false)
+              setScanStage(0)
+              return
+            }
+          } else {
+            setError("No face detected. Please try again.")
+            setIsDetecting(false)
+            setScanStage(0)
+            return
+          }
+        }
+      } catch (err) {
+        setError("Error during face detection.")
+        setIsDetecting(false)
+        setScanStage(0)
+        return
+      }
+      await new Promise(res => setTimeout(res, 500))
+    }
+    if (!useFallback && descriptors.length === 3) {
+      // Average descriptors
+      const avg = new Float32Array(descriptors[0].length)
+      for (let i = 0; i < avg.length; i++) {
+        avg[i] = descriptors.map(d => d[i]).reduce((a, b) => a + b, 0) / descriptors.length
+      }
+      // Normalize and round to integers
+      const mean = avg.reduce((sum, v) => sum + v, 0) / avg.length;
+      const std = Math.sqrt(avg.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / avg.length) || 1;
+      const normalized = avg.map((v) => (v - mean) / std);
+      const rounded = normalized.map((v) => Number(Math.round(v)));
+      const finalDescriptor = new Float32Array(rounded);
+      const jsonString = JSON.stringify(Array.from(finalDescriptor));
+      sessionStorage.setItem("faceDescriptor", jsonString);
+      onFaceDetected(jsonString);
+    } else if (useFallback) {
+      // fallback: just call fallback detection
+      detectFaceFallback()
+    }
+    setIsDetecting(false)
+    setScanStage(0)
+  }
 
   // Fallback face detection when face-api.js is not available
   const detectFaceFallback = async () => {
@@ -303,7 +365,7 @@ export default function ValidatedFaceDetector({
     }
   }
 
-  // Render the canvas overlay for face detection visualization
+  // Render the canvas overlay and scan progress wheel
   return (
     <>
       <canvas
@@ -311,6 +373,21 @@ export default function ValidatedFaceDetector({
         className="absolute inset-0 z-10 pointer-events-none"
         style={{ transform: "scaleX(-1)" }} // Mirror to match video
       />
+      {isDetecting && scanStage > 0 && (
+        <div className="overlay scan-progress">
+          <div className="scan-wheel">
+            {[1,2,3].map(i => (
+              <div
+                key={i}
+                className={`scan-dot${scanStage === i ? ' active' : ''}${scanStage > i ? ' done' : ''}`}
+              >
+                {scanStage > i ? '✔' : ''}
+              </div>
+            ))}
+          </div>
+          <span className="scan-label">Scan {scanStage} of 3</span>
+        </div>
+      )}
       {error && <div className="absolute bottom-0 left-0 right-0 bg-red-500 text-white text-xs p-1 z-20">{error}</div>}
       {useFallback && (
         <div className="absolute top-0 left-0 right-0 bg-yellow-500 text-white text-xs p-1 z-20">

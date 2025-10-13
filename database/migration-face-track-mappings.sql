@@ -4,7 +4,8 @@
 
 CREATE TABLE IF NOT EXISTS face_track_mappings (
   id BIGSERIAL PRIMARY KEY,
-  face_hash VARCHAR(255) UNIQUE NOT NULL,
+  face_hash VARCHAR(255) UNIQUE,
+  face_descriptor JSONB,
   track_id VARCHAR(50) NOT NULL,
   audio_url TEXT NOT NULL,
   generated_count INTEGER DEFAULT 1,
@@ -21,8 +22,9 @@ CREATE INDEX IF NOT EXISTS idx_face_track_mappings_track_id ON face_track_mappin
 CREATE INDEX IF NOT EXISTS idx_face_track_mappings_last_accessed ON face_track_mappings(last_accessed);
 
 -- Add some helpful comments
-COMMENT ON TABLE face_track_mappings IS 'Stores the mapping between facial biometric hashes and their associated generated audio tracks';
-COMMENT ON COLUMN face_track_mappings.face_hash IS 'MD5 hash of facial biometric data - ensures same face always gets same track';
+COMMENT ON TABLE face_track_mappings IS 'Stores the mapping between facial biometric hashes/descriptors and their associated generated audio tracks';
+COMMENT ON COLUMN face_track_mappings.face_hash IS 'MD5 hash of facial biometric data (legacy, may be null)';
+COMMENT ON COLUMN face_track_mappings.face_descriptor IS 'JSON array of facial descriptor values for deterministic matching';
 COMMENT ON COLUMN face_track_mappings.track_id IS 'Unique identifier for the generated track';
 COMMENT ON COLUMN face_track_mappings.audio_url IS 'Public URL to the generated audio file in Supabase storage';
 COMMENT ON COLUMN face_track_mappings.generated_count IS 'Number of times this face has requested their track';

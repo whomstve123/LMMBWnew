@@ -17,8 +17,9 @@ const SimplifiedFaceDetector = dynamic(() => import("@/components/simplified-fac
 export default function Home() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [showAnimation, setShowAnimation] = useState(false)
-  const [faceHash, setFaceHash] = useState<string | null>(null)
+  const [faceDescriptor, setFaceDescriptor] = useState<number[] | null>(null)
   const [isCapturing, setIsCapturing] = useState(false)
+  // Removed isAnalyzing state
   const [isGenerating, setIsGenerating] = useState(false)
   const [noFaceWarning, setNoFaceWarning] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -29,10 +30,10 @@ export default function Home() {
   useEffect(() => {
     // Clear any existing session data on page load to ensure fresh start
     if (typeof window !== "undefined") {
-      sessionStorage.removeItem("faceHash")
+      sessionStorage.removeItem("faceDescriptor")
       sessionStorage.removeItem("audioUrl")
       sessionStorage.removeItem("userEmail")
-      setFaceHash(null) // Ensure we start with no face hash
+      setFaceDescriptor(null) // Ensure we start with no face descriptor
     }
   }, [])
 
@@ -43,6 +44,7 @@ export default function Home() {
   const handleCaptureClick = async () => {
     setShowAnimation(true)
     setIsCapturing(true)
+  // Removed setIsAnalyzing
     setNoFaceWarning(false)
 
     if (webcamRef.current) {
@@ -57,12 +59,23 @@ export default function Home() {
   const handleAnimationComplete = () => {
     setShowAnimation(false)
     setIsCapturing(false)
+  // Removed setIsAnalyzing
+    // Check for faceDescriptor after animation completes
+    const storedDescriptor = sessionStorage.getItem("faceDescriptor")
+    if (storedDescriptor) {
+      setFaceDescriptor(JSON.parse(storedDescriptor))
+      setNoFaceWarning(false)
+  // Removed setIsAnalyzing
+    }
   }
 
-  const handleFaceDetected = (hash: string) => {
-    setFaceHash(hash)
-    setNoFaceWarning(false)
-    sessionStorage.setItem("faceHash", hash)
+  const handleFaceDetected = () => {
+    // Get descriptor from sessionStorage
+    const storedDescriptor = sessionStorage.getItem("faceDescriptor")
+    if (storedDescriptor) {
+      setFaceDescriptor(JSON.parse(storedDescriptor))
+      setNoFaceWarning(false)
+    }
   }
 
   const handleNoFaceDetected = () => {
@@ -71,7 +84,7 @@ export default function Home() {
   }
 
   const handleProceed = async () => {
-    if (!faceHash) return
+    if (!faceDescriptor) return
 
     setIsGenerating(true)
     setErrorMessage(null)
@@ -80,7 +93,7 @@ export default function Home() {
       const res = await fetch("/api/generateTrack", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ faceHash }),
+        body: JSON.stringify({ descriptor: faceDescriptor }),
       })
 
       const data = await res.json()
@@ -189,14 +202,23 @@ export default function Home() {
         )}
 
         <div className="mt-10 flex justify-center">
-          {!faceHash ? (
-            <button
-              onClick={handleCaptureClick}
-              className="px-12 py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic hover:bg-[#2d2d2d] hover:text-[#e8e6d9] transition-colors"
-              disabled={isCapturing}
-            >
-              {isCapturing ? "PROCESSING..." : "CAPTURE"}
-            </button>
+          {!faceDescriptor ? (
+            isCapturing ? (
+              <button
+                className="px-12 py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic transition-colors cursor-not-allowed"
+                disabled
+              >
+                PROCESSING...
+              </button>
+            ) : (
+              <button
+                onClick={handleCaptureClick}
+                className="px-12 py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic hover:bg-[#2d2d2d] hover:text-[#e8e6d9] transition-colors"
+                disabled={isCapturing}
+              >
+                CAPTURE
+              </button>
+            )
           ) : (
             <button
               onClick={handleProceed}
@@ -209,7 +231,7 @@ export default function Home() {
         </div>
       </div>
 
-      {faceHash && <div className="mt-4 text-xs text-[#2d2d2d] opacity-50">Biometric signature captured</div>}
+  {faceDescriptor && <div className="mt-4 text-xs text-[#2d2d2d] opacity-50">Biometric signature captured</div>}
     </main>
   )
 }

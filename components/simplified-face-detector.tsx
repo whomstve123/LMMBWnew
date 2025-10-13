@@ -1,13 +1,13 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useRef, useState, useEffect } from "react"
 
 interface SimplifiedFaceDetectorProps {
-  videoRef: React.RefObject<HTMLVideoElement | null>
-  onFaceDetected: (faceHash: string) => void
-  onNoFaceDetected: () => void
-  isCapturing: boolean
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  onFaceDetected: (faceDescriptor: string) => void;
+  onNoFaceDetected: () => void;
+  isCapturing: boolean;
 }
 
 export default function SimplifiedFaceDetector({
@@ -17,6 +17,7 @@ export default function SimplifiedFaceDetector({
   isCapturing,
 }: SimplifiedFaceDetectorProps) {
   const [isDetecting, setIsDetecting] = useState(false)
+  const [scanStage, setScanStage] = useState(0)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const detectionRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -51,18 +52,65 @@ export default function SimplifiedFaceDetector({
     }
   }, [videoRef])
 
-  // Start detection when capturing
+  // Start multi-scan averaging when capturing
   useEffect(() => {
     if (isCapturing && videoRef.current) {
-      detectFace()
+      runMultiScan()
     }
-
     return () => {
       if (detectionRef.current) {
         clearTimeout(detectionRef.current)
       }
     }
   }, [isCapturing])
+
+  // Multi-scan averaging logic (simulate descriptor)
+  const runMultiScan = async () => {
+    setIsDetecting(true)
+    setScanStage(1)
+    let descriptors: number[][] = []
+    for (let i = 1; i <= 3; i++) {
+      setScanStage(i)
+      const descriptor = await detectFaceDescriptor()
+      if (descriptor) {
+        descriptors.push(descriptor)
+      } else {
+        setIsDetecting(false)
+        setScanStage(0)
+        onNoFaceDetected()
+        return
+      }
+      await new Promise(res => setTimeout(res, 500))
+    }
+    // Average descriptors
+    const avg = descriptors[0].map((_, idx) => descriptors.map(d => d[idx]).reduce((a, b) => a + b, 0) / descriptors.length)
+    const jsonString = JSON.stringify(avg)
+    sessionStorage.setItem("faceDescriptor", jsonString)
+    onFaceDetected(jsonString)
+    setIsDetecting(false)
+    setScanStage(0)
+  }
+
+  // Simulate descriptor extraction from image hash
+  const detectFaceDescriptor = async (): Promise<number[] | null> => {
+    if (!videoRef.current) return null
+    // ...existing code for canvas/image analysis...
+    // Use the same logic as detectFace, but return a fake descriptor array
+    const video = videoRef.current
+    const canvas = document.createElement("canvas")
+    const context = canvas.getContext("2d")
+    if (!context) return null
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    // Use image hash as a source for descriptor
+    const hash = generateImageHash(canvas)
+    // Convert base64 hash to array of numbers
+    const arr = Array.from(hash).map(c => c.charCodeAt(0) % 32)
+    // Pad/trim to 128 length for compatibility
+    while (arr.length < 128) arr.push(0)
+    return arr.slice(0, 128)
+  }
 
   // Simple face detection based on image analysis
   const detectFace = async () => {
@@ -220,12 +268,29 @@ export default function SimplifiedFaceDetector({
     return btoa(hashString)
   }
 
-  // Render the canvas overlay for visualization
+  // Render the canvas overlay and scan progress wheel
   return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 z-10 pointer-events-none"
-      style={{ transform: "scaleX(-1)" }} // Mirror to match video
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 z-10 pointer-events-none"
+        style={{ transform: "scaleX(-1)" }} // Mirror to match video
+      />
+      {isDetecting && scanStage > 0 && (
+        <div className="overlay scan-progress">
+          <div className="scan-wheel">
+            {[1,2,3].map(i => (
+              <div
+                key={i}
+                className={`scan-dot${scanStage === i ? ' active' : ''}${scanStage > i ? ' done' : ''}`}
+              >
+                {scanStage > i ? '✔' : ''}
+              </div>
+            ))}
+          </div>
+          <span className="scan-label">Scan {scanStage} of 3</span>
+        </div>
+      )}
+    </>
   )
 }

@@ -6,6 +6,8 @@ import ProgressivePixelOverlay from "@/components/progressive-pixel-overlay"
 import CustomAudioPlayer from "@/components/custom-audio-player"
 
 export default function YourSoundPage() {
+  // Timeout ref for fallback
+  const audioLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [faceHash, setFaceHash] = useState<string | null>(null)
   const [trackId, setTrackId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -15,14 +17,15 @@ export default function YourSoundPage() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [emailSent, setEmailSent] = useState(false)
   const [selectedStems, setSelectedStems] = useState<Record<string, string> | null>(null)
+  const [isRequesting, setIsRequesting] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const router = useRouter()
 
   useEffect(() => {
-    // Get faceHash from sessionStorage
-    const storedHash = sessionStorage.getItem("faceHash")
-    if (!storedHash) {
-      console.log("No face hash found in session storage, redirecting to home")
+    // Get face descriptor from sessionStorage
+    const storedDescriptor = sessionStorage.getItem("faceDescriptor")
+    if (!storedDescriptor) {
+      console.log("No face descriptor found in session storage, redirecting to home")
       router.push("/")
       return
     }
@@ -33,13 +36,23 @@ export default function YourSoundPage() {
       setEmailSent(true)
     }
 
-    setFaceHash(storedHash)
-    generateTrack(storedHash)
+    setFaceHash("descriptor") // For compatibility, but not used for matching
+    if (!isRequesting) {
+      generateTrack(JSON.parse(storedDescriptor))
+      // Set a fallback timeout to hide animation if audio doesn't load
+      if (audioLoadTimeoutRef.current) clearTimeout(audioLoadTimeoutRef.current)
+      audioLoadTimeoutRef.current = setTimeout(() => {
+        setShowProgressiveAnimation(false)
+        setError("Audio failed to load. Please try again or check your connection.")
+      }, 20000) // 20 seconds
+    }
   }, [router, retryCount])
 
-  const generateTrack = async (hash: string) => {
+  const generateTrack = async (descriptor: number[]) => {
+    if (isRequesting) return;
+    setIsRequesting(true);
     try {
-      console.log("Generating track with hash:", hash.substring(0, 10) + "...")
+      console.log("Generating track with descriptor:", descriptor.slice(0, 5).join(",") + "...")
       setIsLoading(true)
       setError(null)
 
@@ -49,7 +62,7 @@ export default function YourSoundPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ faceHash: hash }),
+        body: JSON.stringify({ descriptor }),
       })
 
       if (!response.ok) {
@@ -62,7 +75,6 @@ export default function YourSoundPage() {
       setTrackId(data.trackId)
       setAudioUrl(data.audioUrl)
       setSelectedStems(data.selectedStems)
-      
       // Don't hide progressive animation yet - wait for media to load
     } catch (err) {
       console.error("Track generation error:", err)
@@ -71,6 +83,7 @@ export default function YourSoundPage() {
       setShowProgressiveAnimation(false)
     } finally {
       setIsLoading(false)
+      setIsRequesting(false);
     }
   }
 
@@ -81,13 +94,32 @@ export default function YourSoundPage() {
   }
 
   const handleAudioLoaded = () => {
-    // Hide the progressive animation when audio is ready to play
-    setShowProgressiveAnimation(false)
+    // Clear the fallback timeout
+    if (audioLoadTimeoutRef.current) {
+      clearTimeout(audioLoadTimeoutRef.current)
+      audioLoadTimeoutRef.current = null
+    }
+    // Clear any error message
+    setError(null)
+    // Add a built-in delay before hiding the animation
+    setTimeout(() => {
+      setShowProgressiveAnimation(false)
+    }, 17000) // 17 seconds delay (7+10)
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (audioLoadTimeoutRef.current) {
+        clearTimeout(audioLoadTimeoutRef.current)
+      }
+    }
+  }, [])
   }
 
   const handleAnimationComplete = () => {
     // Called when the progress reaches 100% and animation is done
-    setShowProgressiveAnimation(false)
+    setTimeout(() => {
+      setShowProgressiveAnimation(false)
+    }, 17000) // 17 seconds delay (7+10)
   }
 
   return (
@@ -112,11 +144,11 @@ export default function YourSoundPage() {
             <div className="bg-transparent p-6 rounded-lg text-center">
               <h2 className="text-3xl font-gothic text-[#2d2d2d] mb-6">THIS SOUND WAS MADE FOR YOU</h2>
 
-              {isLoading ? (
-                <div className="py-8 text-[#2d2d2d] font-gothic">LOADING YOUR UNIQUE SOUND...</div>
+              {(isLoading || showProgressiveAnimation) ? (
+                <div className="py-8 text-[#2d2d2d] font-gothic">INITIALIZING YOUR UNIQUE SOUND...</div>
               ) : (
                 <div className="space-y-6">
-                  {error && <p className="text-red-400 mb-2 text-sm">{error}</p>}
+                  {/* Removed error message before audio player loads */}
                   {audioUrl && (
                     <CustomAudioPlayer
                       src={audioUrl}

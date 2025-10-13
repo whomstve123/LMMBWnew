@@ -37,28 +37,30 @@ export async function downloadStems(stemUrls: Record<string, string>): Promise<R
   const tmpDir = path.join("/tmp", jobId)
 
   try {
-    // Create the temporary directory
     fs.mkdirSync(tmpDir, { recursive: true })
+    console.log('[audio-processor] Created temp dir:', tmpDir)
 
     // Download each stem
     const downloadPromises = Object.entries(stemUrls).map(async ([category, url]) => {
       const filename = `${category}-${path.basename(url)}`
       const localPath = path.join(tmpDir, filename)
-
+      console.log(`[audio-processor] Downloading ${category} from ${url} to ${localPath}`)
       await downloadFile(url, localPath)
+      console.log(`[audio-processor] Downloaded ${category} to ${localPath}`)
       localPaths[category] = localPath
     })
 
     await Promise.all(downloadPromises)
+    console.log('[audio-processor] All stems downloaded:', localPaths)
     return localPaths
   } catch (error) {
     // Clean up if there's an error
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true })
     } catch (cleanupError) {
-      console.error("Error cleaning up temporary directory:", cleanupError)
+      console.error("[audio-processor] Error cleaning up temporary directory:", cleanupError)
     }
-
+    console.error('[audio-processor] Error downloading stems:', error)
     throw error
   }
 }
@@ -73,33 +75,48 @@ export async function combineStems(stemPaths: Record<string, string>, outputPath
   try {
     // Create the ffmpeg command to mix all stems
     // This creates a filter_complex to mix all input audio files
+    const categories = Object.keys(stemPaths);
     const inputs = Object.values(stemPaths)
       .map((path) => `-i "${path}"`)
-      .join(" ")
-    const filterComplex = `amix=inputs=${Object.keys(stemPaths).length}:duration=longest:dropout_transition=2`
+      .join(" ");
 
-    const command = `ffmpeg ${inputs} -filter_complex "${filterComplex}" -c:a libmp3lame -q:a 2 "${outputPath}"`
+    // Build volume filters for vox, leads, arps
+    let filterInputs = [];
+    let amixInputs = [];
+    let idx = 0;
+    for (const category of categories) {
+      if (["vox", "leads", "arps"].includes(category)) {
+        filterInputs.push(`[${idx}]volume=10.5dB[a${idx}]`);
+        amixInputs.push(`[a${idx}]`);
+      } else {
+        filterInputs.push(`[${idx}]volume=-2dB[a${idx}]`);
+        amixInputs.push(`[a${idx}]`);
+      }
+      idx++;
+    }
+    const filterComplex = `${filterInputs.length > 0 ? filterInputs.join(';') + ';' : ''}${amixInputs.join('')}amix=inputs=${categories.length}:duration=longest:dropout_transition=2`;
+
+    const command = `ffmpeg ${inputs} -filter_complex "${filterComplex}" -c:a libmp3lame -q:a 2 "${outputPath}"`;
+    console.log('[audio-processor] Running ffmpeg command:', command);
 
     // Execute the ffmpeg command
-    await execPromise(command)
+    await execPromise(command);
+    console.log('[audio-processor] ffmpeg finished, output at:', outputPath);
 
-    return outputPath
+    return outputPath;
   } catch (error) {
-    console.error("Error combining stems:", error)
+    console.error("[audio-processor] Error combining stems:", error)
     throw new Error(`Failed to combine audio stems: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
 /**
  * Processes a complete audio generation job
- * @param faceHash - The hash generated from face detection
+ * @param trackId - The track ID generated from the descriptor
  * @param stemUrls - Object with stem URLs for each category
  * @returns The path to the generated audio file
  */
-export async function processAudioJob(faceHash: string, stemUrls: Record<string, string>): Promise<string> {
-  // Create a unique ID for this track based on the face hash
-  const trackId = crypto.createHash("md5").update(faceHash).digest("hex").substring(0, 10)
-
+export async function processAudioJob(trackId: string, stemUrls: Record<string, string>): Promise<string> {
   // Create output directory if it doesn't exist
   const outputDir = path.join(process.cwd(), "public", "generated")
   fs.mkdirSync(outputDir, { recursive: true })
@@ -117,7 +134,29 @@ export async function processAudioJob(faceHash: string, stemUrls: Record<string,
     const tmpDir = path.dirname(Object.values(localStemPaths)[0])
     fs.rmSync(tmpDir, { recursive: true, force: true })
 
-    return `/generated/${trackId}.mp3`
+    // Upload to Supabase storage
+    const { createClient } = await import("@supabase/supabase-js")
+    const SUPABASE_URL = process.env.SUPABASE_URL!
+    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    const fileBuffer = fs.readFileSync(outputPath)
+    const supabasePath = `${trackId}.mp3`
+    const { data, error } = await supabase.storage.from("generated").upload(supabasePath, fileBuffer, {
+      contentType: "audio/mpeg",
+      upsert: true,
+    })
+    if (error) {
+      console.error("[audio-processor] Supabase upload error:", error)
+      // Still return local path for debugging
+      return `/generated/${trackId}.mp3`
+    }
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage.from("generated").getPublicUrl(supabasePath)
+    if (!publicUrlData || !publicUrlData.publicUrl) {
+      console.error("[audio-processor] Could not get public URL for uploaded audio.")
+      return `/generated/${trackId}.mp3`
+    }
+    return publicUrlData.publicUrl
   } catch (error) {
     console.error("Error processing audio job:", error)
     throw error

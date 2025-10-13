@@ -75,45 +75,72 @@ export function useFaceDetection({ enabled, videoRef, onFaceDetected }: UseFaceD
     }
 
     // Set up detection interval
+  // Multi-scan averaging: collect 3 descriptors, average, then hash
+  let descriptors: Float32Array[] = [];
+  let scanCount = 0;
+  const maxScans = 3;
+  let timeoutId: NodeJS.Timeout | null = null;
+    // Add a timeout for the analyzing stage
+    timeoutId = setTimeout(() => {
+      setError("Face scan is taking too long. Please try again or check your camera.");
+      setIsDetecting(false);
+      if (detectionInterval.current) {
+        clearInterval(detectionInterval.current);
+      }
+    }, 5000);
+
     detectionInterval.current = setInterval(async () => {
       if (!videoRef.current || !videoRef.current.readyState || videoRef.current.readyState < 2) {
         return // Video not ready yet
       }
 
       try {
-        const descriptor = await generateFaceDescriptor(videoRef.current)
+        const descriptor = await generateFaceDescriptor(videoRef.current);
+        if (descriptor && !(typeof descriptor === "object" && "error" in descriptor)) {
+          descriptors.push(descriptor);
+          scanCount++;
+        } else if (descriptor && typeof descriptor === "object" && "error" in descriptor) {
+          setError(descriptor.error);
+          setFaceDetected(false);
+          return;
+        }
 
-        if (descriptor) {
-          // Convert descriptor to base64 hash
-          const hash = descriptorToBase64(descriptor)
-
-          // Save to state and sessionStorage
-          setFaceHash(hash)
-          setFaceDetected(true)
-          sessionStorage.setItem("faceHash", hash)
-
-          // Call callback if provided
-          if (onFaceDetected) {
-            onFaceDetected(hash)
+        if (scanCount >= maxScans) {
+          // Average descriptors
+          const avg = new Float32Array(descriptors[0].length);
+          for (let i = 0; i < avg.length; i++) {
+            avg[i] = descriptors.map(d => d[i]).reduce((a, b) => a + b, 0) / descriptors.length;
           }
-
-          // Stop detection after successful detection
+          // Normalize and round to integers
+          const mean = avg.reduce((sum, v) => sum + v, 0) / avg.length;
+          const std = Math.sqrt(avg.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / avg.length) || 1;
+          const normalized = avg.map((v) => (v - mean) / std);
+          const rounded = normalized.map((v) => Number(Math.round(v)));
+          const finalDescriptor = new Float32Array(rounded);
+          sessionStorage.setItem("faceDescriptor", JSON.stringify(Array.from(finalDescriptor)));
+          setFaceDetected(true);
+          if (onFaceDetected) {
+            onFaceDetected("descriptor"); // For compatibility
+          }
+          // Stop detection after successful averaging
           if (detectionInterval.current) {
-            clearInterval(detectionInterval.current)
-            setIsDetecting(false)
+            clearInterval(detectionInterval.current);
+            setIsDetecting(false);
+          }
+          if (timeoutId) {
+            clearTimeout(timeoutId);
           }
         }
       } catch (err) {
-        console.error("Face detection error:", err)
-        setError("Error during face detection")
-
+        console.error("Face detection error:", err);
+        setError("Error during face detection");
         // Stop on error
         if (detectionInterval.current) {
-          clearInterval(detectionInterval.current)
-          setIsDetecting(false)
+          clearInterval(detectionInterval.current);
+          setIsDetecting(false);
         }
       }
-    }, 500) // Check every 500ms
+    }, 500); // Check every 500ms
   }
 
   // Function to reset detection

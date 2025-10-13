@@ -31,7 +31,8 @@ export async function loadFaceApiModels() {
 }
 
 // Detect face and generate descriptor
-export async function generateFaceDescriptor(videoElement: HTMLVideoElement): Promise<Float32Array | null> {
+// Returns face descriptor, or { error } if scan quality is poor, or null if no face detected
+export async function generateFaceDescriptor(videoElement: HTMLVideoElement): Promise<Float32Array | { error: string } | null> {
   if (!modelsLoaded) {
     await loadFaceApiModels()
   }
@@ -48,6 +49,20 @@ export async function generateFaceDescriptor(videoElement: HTMLVideoElement): Pr
       return null
     }
 
+    // Quality check: reject poor scans (low score, small box, etc.)
+  const minScore = 0.60; // Maximally tolerant threshold for maximum flexibility
+    if (detection.score < minScore) {
+      const errorMsg = `Face detected but score too low (${detection.score}). Scan rejected. Try better lighting, a closer face, and a neutral expression.`;
+      console.log(errorMsg);
+      return { error: errorMsg };
+    }
+    const box = detection.box;
+    if (box.width < 100 || box.height < 100) {
+      const errorMsg = `Face detected but bounding box too small (${box.width}x${box.height}). Scan rejected. Try getting closer to the camera.`;
+      console.log(errorMsg);
+      return { error: errorMsg };
+    }
+
     // Get face descriptor
     const descriptor = await faceapi.computeFaceDescriptor(videoElement)
 
@@ -56,7 +71,15 @@ export async function generateFaceDescriptor(videoElement: HTMLVideoElement): Pr
       return null
     }
 
-    return descriptor as Float32Array
+  // Coarse binning: normalize and round to nearest integer for maximum repeatability
+  const arr = Array.prototype.slice.call(descriptor as Float32Array);
+  const mean = arr.reduce((sum, v) => sum + v, 0) / arr.length;
+  const std = Math.sqrt(arr.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / arr.length) || 1;
+  const normalized = arr.map((v) => (v - mean) / std);
+  // Ensure integer conversion: Math.round returns a number, but keep as Float32Array for type compatibility
+  const rounded = normalized.map((v) => Number(Math.round(v)));
+  const binnedDescriptor = new Float32Array(rounded);
+  return binnedDescriptor;
   } catch (error) {
     console.error("Error generating face descriptor:", error)
     return null

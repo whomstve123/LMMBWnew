@@ -8,39 +8,72 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export async function POST(request: Request) {
   try {
-    const { faceHash } = await request.json();
+    const { descriptor } = await request.json();
 
-    if (!faceHash) {
-      return NextResponse.json({ error: "Face hash is required" }, { status: 400 });
+    if (!descriptor || !Array.isArray(descriptor)) {
+      return NextResponse.json({ error: "Descriptor array is required" }, { status: 400 });
     }
 
-    // Generate consistent trackId from face hash
-    const trackId = crypto.createHash("md5").update(faceHash).digest("hex").substring(0, 10);
-    
-    // Check if we have a record of this face-track mapping
-    const { data: existingMapping, error: selectError } = await supabase
+    // Fetch all stored descriptors
+    const { data: allMappings, error: selectError } = await supabase
       .from('face_track_mappings')
-      .select('*')
-      .eq('face_hash', faceHash)
-      .single();
+      .select('*');
 
-    if (selectError && selectError.code !== 'PGRST116') { // PGRST116 = no rows returned
+    if (selectError) {
       console.error('Database select error:', selectError);
-      // Continue anyway - we can still work with file-based lookup
+      // Continue anyway
     }
 
-    if (existingMapping) {
-      console.log(`Found existing mapping for face hash: ${faceHash} -> trackId: ${existingMapping.track_id}`);
+    // Cosine similarity function
+    function cosineSimilarity(a, b) {
+      let dot = 0, normA = 0, normB = 0;
+      for (let i = 0; i < a.length; i++) {
+        dot += a[i] * b[i];
+        normA += a[i] * a[i];
+        normB += b[i] * b[i];
+      }
+      return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+    }
+
+    let bestMatch = null;
+    let bestScore = -1;
+    const threshold = 0.8; // You can tune this
+
+    if (allMappings && allMappings.length > 0) {
+      for (const mapping of allMappings) {
+        if (mapping.face_descriptor) {
+          try {
+            const stored = Array.isArray(mapping.face_descriptor)
+              ? mapping.face_descriptor
+              : JSON.parse(mapping.face_descriptor);
+            if (stored.length === descriptor.length) {
+              const score = cosineSimilarity(descriptor, stored);
+              if (score > bestScore) {
+                bestScore = score;
+                bestMatch = mapping;
+              }
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+      }
+    }
+
+    if (bestMatch && bestScore >= threshold) {
       return NextResponse.json({
         exists: true,
-        trackId: existingMapping.track_id,
-        audioUrl: existingMapping.audio_url,
-        createdAt: existingMapping.created_at,
-        generatedCount: existingMapping.generated_count + 1
+        trackId: bestMatch.track_id,
+        audioUrl: bestMatch.audio_url,
+        createdAt: bestMatch.created_at,
+        generatedCount: bestMatch.generated_count + 1,
+        similarity: bestScore
       });
     }
 
-    console.log(`No existing mapping found for face hash: ${faceHash}`);
+    // No match found, generate new trackId
+    const descriptorString = JSON.stringify(descriptor);
+    const trackId = crypto.createHash("md5").update(descriptorString).digest("hex").substring(0, 10);
     return NextResponse.json({
       exists: false,
       trackId,

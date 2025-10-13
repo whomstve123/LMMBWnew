@@ -153,24 +153,18 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError }: Custom
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
-    <div className="w-full bg-[#1a1a1a] border-4 border-[#2d2d2d] relative" style={{ 
-      borderStyle: 'solid',
-      borderTopColor: '#4a4a4a',
-      borderLeftColor: '#4a4a4a', 
-      borderRightColor: '#0a0a0a',
-      borderBottomColor: '#0a0a0a',
-      boxShadow: 'inset 2px 2px 4px rgba(0,0,0,0.3), inset -2px -2px 4px rgba(255,255,255,0.1)'
-    }}>
+      <div className="w-full bg-[#1a1a1a] border-2 border-[#2d2d2d] relative" style={{
+        borderStyle: 'solid',
+        boxShadow: 'none',
+        borderColor: '#2d2d2d'
+      }}>
       {/* Hidden audio element */}
       <audio ref={audioRef} src={src} preload="metadata" />
 
       {/* LCD-style display */}
       <div className="bg-[#0a0a0a] mx-3 mt-3 p-3 border-2 border-[#2d2d2d]" style={{
-        borderTopColor: '#0a0a0a',
-        borderLeftColor: '#0a0a0a',
-        borderRightColor: '#3a3a3a', 
-        borderBottomColor: '#3a3a3a',
-        boxShadow: 'inset -1px -1px 2px rgba(255,255,255,0.1)'
+        borderColor: '#2d2d2d',
+        boxShadow: 'none'
       }}>
         {/* Track info display */}
         <div className="flex justify-between items-center mb-3">
@@ -263,16 +257,10 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError }: Custom
           <button
             onClick={togglePlayPause}
             disabled={!isLoaded}
-            className="w-12 h-12 bg-[#2d2d2d] border-2 border-[#4a4a4a] flex items-center justify-center font-mono text-[#e8e6d9] text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-100 active:translate-y-0.5"
+            className="w-12 h-12 bg-[#2d2d2d] border-2 border-[#2d2d2d] flex items-center justify-center font-mono text-[#e8e6d9] text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-100"
             style={{
-              borderTopColor: '#5a5a5a',
-              borderLeftColor: '#5a5a5a',
-              borderRightColor: '#1a1a1a',
-              borderBottomColor: '#1a1a1a',
-              boxShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+              boxShadow: 'none'
             }}
-            onMouseDown={(e) => e.currentTarget.style.boxShadow = '1px 1px 2px rgba(0,0,0,0.5)'}
-            onMouseUp={(e) => e.currentTarget.style.boxShadow = '2px 2px 4px rgba(0,0,0,0.5)'}
           >
             {!isLoaded ? "•••" : isPlaying ? "⏸" : "▶"}
           </button>
@@ -297,14 +285,10 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError }: Custom
                 <div
                   key={level}
                   className={`w-1 h-4 border border-[#2d2d2d] cursor-pointer transition-all duration-100 ${
-                    volume * 8 >= level ? 'bg-[#4a5a4a]' : 'bg-[#0a0a0a]'
+                    volume * 8 >= level ? 'bg-[#4a5a4a] shadow-[0_0_8px_2px_#4a5a4a]' : 'bg-[#0a0a0a]'
                   }`}
                   style={{
-                    borderTopColor: volume * 8 >= level ? '#5a5a5a' : '#0a0a0a',
-                    borderLeftColor: volume * 8 >= level ? '#5a5a5a' : '#0a0a0a',
-                    borderRightColor: volume * 8 >= level ? '#3a3a3a' : '#1a1a1a',
-                    borderBottomColor: volume * 8 >= level ? '#3a3a3a' : '#1a1a1a',
-                    boxShadow: volume * 8 >= level ? '0 0 2px rgba(74, 90, 74, 0.5)' : 'none'
+                    background: 'none'
                   }}
                 />
               ))}
@@ -324,13 +308,7 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError }: Custom
         </div>
       )}
       
-      {error && (
-        <div className="absolute inset-0 bg-[#1a1a1a] bg-opacity-95 flex items-center justify-center">
-          <div className="text-[#5a4a4a] font-mono text-sm tracking-wider">
-            ERROR
-          </div>
-        </div>
-      )}
+      {/* Removed error overlay */}
     </div>
   )
 }

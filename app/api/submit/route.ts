@@ -3,10 +3,10 @@ import crypto from "crypto"
 
 export async function POST(request: Request) {
   try {
-    const { email, faceHash } = await request.json()
+    const { email, descriptor } = await request.json()
 
-    if (!email || !faceHash) {
-      return NextResponse.json({ error: "Email and face data are required" }, { status: 400 })
+    if (!email || !descriptor || !Array.isArray(descriptor)) {
+      return NextResponse.json({ error: "Email and descriptor array are required" }, { status: 400 })
     }
 
     console.log(`Submission received: ${email}`)
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     const generateTrackResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/generateTrack`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ faceHash })
+      body: JSON.stringify({ descriptor })
     });
 
     if (!generateTrackResponse.ok) {

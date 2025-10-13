@@ -17,6 +17,7 @@ export default function ProgressivePixelOverlay({ isVisible, onComplete }: Progr
     glitchType: 'normal' | 'flicker' | 'corrupt' | 'burst'
     intensity: number
   }>>([])
+  const pixelIdCounter = React.useRef(0)
   const [progress, setProgress] = useState(0) // 0-100 progress percentage
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isCompleting, setIsCompleting] = useState(false)
@@ -67,8 +68,8 @@ export default function ProgressivePixelOverlay({ isVisible, onComplete }: Progr
 
     if (isCompleting) {
       // When completing, create overwhelming burst of pixels
-      const burstPixels = Array.from({ length: 150 }, (_, i) => ({
-        id: Date.now() + Math.random() + i,
+      const burstPixels = Array.from({ length: 150 }, () => ({
+        id: pixelIdCounter.current++,
         x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
         y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
         delay: Math.random() * 0.2,
@@ -147,7 +148,7 @@ export default function ProgressivePixelOverlay({ isVisible, onComplete }: Progr
         }
         
         return {
-          id: Date.now() + Math.random() + i,
+          id: pixelIdCounter.current++,
           x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
           y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
           delay: Math.random() * (progressPercent < 0.5 ? 1 : progressPercent < 0.9 ? 0.3 : 0.1), // MUCH faster delays at 90%+

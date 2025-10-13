@@ -7,18 +7,18 @@ import { useRouter } from "next/navigation"
 
 export default function EmailPage() {
   const [email, setEmail] = useState("")
-  const [faceHash, setFaceHash] = useState<string | null>(null)
+  const [faceDescriptor, setFaceDescriptor] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  // Get faceHash from sessionStorage on mount
+  // Get faceDescriptor from sessionStorage on mount
   useEffect(() => {
-    const storedHash = sessionStorage.getItem("faceHash")
-    if (storedHash) {
-      setFaceHash(storedHash)
+    const storedDescriptor = sessionStorage.getItem("faceDescriptor")
+    if (storedDescriptor) {
+      setFaceDescriptor(storedDescriptor)
     } else {
-      // Redirect to home if no faceHash is found
+      // Redirect to home if no faceDescriptor is found
       router.push("/")
     }
   }, [router])
@@ -26,7 +26,7 @@ export default function EmailPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!email || !faceHash) {
+    if (!email || !faceDescriptor) {
       setError("Email and face data are required")
       return
     }
@@ -43,7 +43,7 @@ export default function EmailPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, faceHash }),
+        body: JSON.stringify({ email, descriptor: JSON.parse(faceDescriptor) }),
       })
 
       if (!response.ok) {
@@ -88,15 +88,15 @@ export default function EmailPage() {
                   placeholder="your@email.com"
                   required
                 />
-                <input type="hidden" name="faceHash" value={faceHash || ""} />
+                <input type="hidden" name="faceDescriptor" value={faceDescriptor || ""} />
               </div>
 
               <button
                 type="submit"
-                disabled={isSubmitting || !faceHash}
+                disabled={isSubmitting || !faceDescriptor}
                 className={`w-full px-6 py-3 border-2 border-[#2d2d2d] font-gothic text-xl
                   ${
-                    isSubmitting || !faceHash
+                    isSubmitting || !faceDescriptor
                       ? "text-gray-400 border-gray-400 cursor-not-allowed"
                       : "text-[#2d2d2d] hover:bg-[#2d2d2d] hover:text-[#e8e6d9]"
                   } transition-colors`}
