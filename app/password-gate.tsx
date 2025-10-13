@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation"
 
 export default function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
+    const [error, setError] = useState("")
+    const [flashRed, setFlashRed] = useState(false)
   const [unlocked, setUnlocked] = useState(false)
   const [animating, setAnimating] = useState(false)
   const [phase, setPhase] = useState<'idle'|'dots'|'align'|'dissolve'|'done'>('idle')
@@ -39,6 +40,11 @@ export default function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
       }, 1800)
     } else {
       setError("Incorrect password")
+        setFlashRed(true)
+        setTimeout(() => {
+          setFlashRed(false)
+          setError("")
+        }, 400)
     }
   }
   // Show dots on lines when user starts typing
@@ -60,26 +66,25 @@ export default function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
       {/* Centered password form, visually inside the Bohr frame, never overlapping lines */}
       {!animating && !unlocked && !hideText && (
         <form onSubmit={handleSubmit} className="absolute left-1/2 top-1/2 z-10 flex flex-col items-center" style={{transform: 'translate(-50%, -50%)', width: 180, minHeight: 70}}>
-          <label className="mb-3 text-base font-gothic text-[#ebfdc8] tracking-widest">Enter Password</label>
+          <label className={`mb-3 text-base font-gothic tracking-widest ${flashRed ? 'animate-flash-red text-[#ff3b3b]' : 'text-[#ebfdc8]'}`}>Enter Password</label>
           <input
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="bg-transparent border-b border-[#ebfdc8] text-[#ebfdc8] text-sm font-mono px-2 py-1 outline-none placeholder-[#ebfdc8]/60 text-center w-28"
+            className={`bg-transparent border-b text-sm font-mono px-2 py-1 outline-none placeholder-[#ebfdc8]/60 text-center w-28 ${flashRed ? 'border-[#ff3b3b] text-[#ff3b3b] animate-flash-red' : 'border-[#ebfdc8] text-[#ebfdc8]'}`}
             placeholder="Password"
             autoFocus
           />
           <button
             type="submit"
-            className="mt-3 flex items-center justify-center w-8 h-8 rounded-full bg-[#2d2d2d] hover:bg-[#1a1a1a] transition-colors shadow-md"
+            className={`mt-3 flex items-center justify-center w-8 h-8 ${flashRed ? 'animate-flash-red' : ''}`}
             aria-label="Go"
-            style={{border: 'none'}}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 9h8M10 7l2 2-2 2" stroke="#ebfdc8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          {error && <div className="mt-2 text-[#ebfdc8] text-xs font-mono">{error}</div>}
+            style={{background: 'none', border: 'none', boxShadow: 'none', borderRadius: 0, padding: 0}}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 9h8M10 7l2 2-2 2" stroke={flashRed ? '#ff3b3b' : '#ebfdc8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          {error && <div className={`mt-2 text-xs font-mono ${flashRed ? 'text-[#ff3b3b] animate-flash-red' : 'text-[#ebfdc8]'}`}>{error}</div>}
         </form>
       )}
     </div>

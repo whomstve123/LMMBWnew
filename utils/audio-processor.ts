@@ -88,6 +88,9 @@ export async function combineStems(stemPaths: Record<string, string>, outputPath
       if (["vox", "leads", "arps"].includes(category)) {
         filterInputs.push(`[${idx}]volume=10.5dB[a${idx}]`);
         amixInputs.push(`[a${idx}]`);
+      } else if (["bass", "pads", "noise"].includes(category)) {
+        filterInputs.push(`[${idx}]volume=-1dB[a${idx}]`);
+        amixInputs.push(`[a${idx}]`);
       } else {
         filterInputs.push(`[${idx}]volume=-2dB[a${idx}]`);
         amixInputs.push(`[a${idx}]`);

@@ -1,3 +1,14 @@
+@keyframes flash-red {
+  0% { background: none; }
+  10% { background: rgba(255,59,59,0.15); }
+  50% { background: rgba(255,59,59,0.25); }
+  90% { background: rgba(255,59,59,0.15); }
+  100% { background: none; }
+}
+
+.animate-flash-red {
+  animation: flash-red 0.4s linear;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
