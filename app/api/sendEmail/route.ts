@@ -38,54 +38,34 @@ export async function POST(request: Request) {
     // Test email content or real email content
     const emailContent = testMode ? {
       subject: "Test Email from Mind Un-Wanderer",
-      html: `
-        <div style="font-family: 'Courier New', monospace; background-color: #000; color: #00ff00; padding: 20px; border: 2px solid #00ff00; max-width: 600px;">
-          <h1 style="text-align: center; margin-bottom: 20px; text-shadow: 0 0 10px #00ff00;">MIND UN-WANDERER</h1>
-          <h2 style="color: #00ff88;">Test Email Successful</h2>
-          <p>This is a test email to verify your SMTP configuration is working correctly.</p>
-          <p style="background: #1a1a1a; padding: 10px; border-left: 3px solid #00ff00;">
-            <strong>Email Service Status:</strong> OPERATIONAL
-          </p>
-          <p style="margin-top: 20px; font-size: 12px; opacity: 0.8;">
-            Sent at: ${new Date().toLocaleString()}
-          </p>
-        </div>
-      `
+      html:
+        `<div style='font-family: Courier New, monospace; background-color: #000; color: #ebfdc8; padding: 20px; border: 2px solid #ebfdc8; max-width: 600px;'>` +
+        `<h1 style='text-align: center; margin-bottom: 20px; text-shadow: 0 0 10px #ebfdc8;'>MIND UN-WANDERER</h1>` +
+        `<h2 style='color: #ebfdc8;'>Test Email Successful</h2>` +
+        `<p>This is a test email to verify your SMTP configuration is working correctly.</p>` +
+        `<p style='background: #1a1a1a; padding: 10px; border-left: 3px solid #ebfdc8;'>` +
+        `<strong>Email Service Status:</strong> OPERATIONAL</p>` +
+        `<p style='margin-top: 20px; font-size: 12px; opacity: 0.8;'>Sent at: ${new Date().toLocaleString()}</p>` +
+        `</div>`
     } : {
       subject: "Your Mind Un-Wanderer Track is Ready",
-      html: `
-        <div style="font-family: 'Courier New', monospace; background-color: #000; color: #00ff00; padding: 20px; border: 2px solid #00ff00; max-width: 600px;">
-          <h1 style="text-align: center; margin-bottom: 20px; text-shadow: 0 0 10px #00ff00;">MIND UN-WANDERER</h1>
-          <p>Thank you for using Jill Blutt's Revolutionary Mind Un-Wanderer.</p>
-          <p>Your unique sound has been generated based on your biometric data.</p>
-          
-          <div style="background: #1a1a1a; padding: 15px; margin: 20px 0; border-left: 3px solid #00ff00;">
-            <p style="margin: 0;"><strong>Track ID:</strong> ${trackId}</p>
-            <p style="margin: 10px 0 0 0;">
-              <a href="${audioUrl}" 
-                 style="color: #00ff88; text-decoration: none; background: #2a2a2a; padding: 8px 16px; border: 1px solid #00ff88; display: inline-block; margin-top: 10px;"
-                 download>
-                DOWNLOAD YOUR TRACK
-              </a>
-            </p>
-          </div>
-          
-          <p>This link will allow you to download your personalized sound file that has been 
-          specifically created based on your unique facial biometric data.</p>
-          
-          <p style="margin-top: 30px; opacity: 0.8; font-size: 14px;">
-            Best regards,<br>
-            The Mind Un-Wanderer Team
-          </p>
-          
-          <p style="margin-top: 20px; font-size: 11px; opacity: 0.6;">
-            Generated: ${new Date().toLocaleString()}
-          </p>
-        </div>
-      `
+      html:
+        `<div style='font-family: Courier New, monospace; background-color: #000; color: #ebfdc8; padding: 20px; border: 2px solid #ebfdc8; max-width: 600px;'>` +
+        `<h1 style='text-align: center; margin-bottom: 20px; text-shadow: 0 0 10px #ebfdc8;'>MIND UN-WANDERER</h1>` +
+        `<p>Thank you for using Jill Blutt's Revolutionary Mind Un-Wanderer.</p>` +
+        `<p>Your unique sound has been generated based on your biometric data.</p>` +
+        `<div style='background: #1a1a1a; padding: 15px; margin: 20px 0; border-left: 3px solid #ebfdc8;'>` +
+        `<p style='margin: 0;'><strong>Track ID:</strong> ${trackId}</p>` +
+        `<p style='margin: 10px 0 0 0;'>` +
+        `<a href='${audioUrl}' style='color: #ebfdc8; text-decoration: none; background: #2a2a2a; padding: 8px 16px; border: 1px solid #ebfdc8; display: inline-block; margin-top: 10px;' download>DOWNLOAD YOUR TRACK</a>` +
+        `</p>` +
+        `</div>` +
+        `<p>This link will allow you to download your personalized sound file that has been specifically created based on your unique facial biometric data.</p>` +
+        `<p style='margin-top: 30px; opacity: 0.8; font-size: 14px;'>Best regards,<br>Jill</p>` +
+        `<p style='margin-top: 20px; font-size: 11px; opacity: 0.6;'>Generated: ${new Date().toLocaleString()}</p>` +
+        `</div>`
     };
 
-    // Send the email
     const mailOptions = {
       from: process.env.EMAIL_FROM,
       to: email,

@@ -21,36 +21,46 @@ export default function ProgressivePixelOverlay({ isVisible, onComplete }: Progr
   const [progress, setProgress] = useState(0) // 0-100 progress percentage
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isCompleting, setIsCompleting] = useState(false)
+  const [minTimeReached, setMinTimeReached] = useState(false)
 
-  // Function to complete the progress to 100%
+  // Minimum visible time in ms
+  const MIN_VISIBLE_TIME = 3000;
+
+  // Function to complete the progress to 100%, but only after min time
   const completeProgress = () => {
     if (isCompleting) return
     setIsCompleting(true)
-    
+    // Wait for min visible time before completing
+    if (!minTimeReached) {
+      setTimeout(() => {
+        setMinTimeReached(true)
+        completeProgress()
+      }, MIN_VISIBLE_TIME - elapsedTime)
+      return
+    }
     // Quickly animate to 100%
     const completeInterval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
           clearInterval(completeInterval)
-          // Call onComplete callback and immediately hide
           setTimeout(() => {
             onComplete?.()
           }, 100)
           return 100
         }
-        return Math.min(prev + 8, 100) // Increment by 8% each time for faster completion
+        return Math.min(prev + 8, 100)
       })
-    }, 30) // Every 30ms for smooth animation
+    }, 30)
   }
 
   // Call completeProgress when media is loaded (when isVisible becomes false)
   useEffect(() => {
     if (!isVisible) {
-      // IMMEDIATELY hide and clear everything when isVisible becomes false - no gradual completion
       setPixels([])
       setProgress(0)
       setElapsedTime(0)
       setIsCompleting(false)
+      setMinTimeReached(false)
       onComplete?.()
       return
     }
@@ -88,20 +98,20 @@ export default function ProgressivePixelOverlay({ isVisible, onComplete }: Progr
     progressInterval = setInterval(() => {
       setElapsedTime(prev => {
         const newTime = prev + 100 // increment by 100ms
+        if (newTime >= MIN_VISIBLE_TIME && !minTimeReached) {
+          setMinTimeReached(true)
+        }
         // Simulate realistic loading progress (slower at start, faster in middle, slower at end)
         let newProgress = 0
         if (newTime < 5000) {
-          // First 5 seconds: 0-30%
           newProgress = (newTime / 5000) * 30
         } else if (newTime < 15000) {
-          // Next 10 seconds: 30-80%
           newProgress = 30 + ((newTime - 5000) / 10000) * 50
         } else {
-          // After 15 seconds: 80-95% (slowing down, never quite reaching 100%)
           const remainingTime = newTime - 15000
           newProgress = 80 + (1 - Math.exp(-remainingTime / 10000)) * 15
         }
-        setProgress(Math.min(newProgress, 95)) // Cap at 95% until media actually loads
+        setProgress(Math.min(newProgress, 95))
         return newTime
       })
     }, 100)
