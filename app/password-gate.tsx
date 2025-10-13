@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 
+// Pixelated dissolve overlay (top-level)
+
 export default function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
