@@ -158,7 +158,7 @@ export default function YourSoundPage() {
                   {/* Removed error message before audio player loads */}
                   {audioUrl && (
                     <CustomAudioPlayer
-                      src={audioUrl + (trackId ? `?v=${trackId}` : '')}
+                      src={audioUrl + (trackId ? `?v=${trackId}&t=${Date.now()}` : `?t=${Date.now()}`)}
                       onLoadedData={handleAudioLoaded}
                       onPlay={() => {
                         // On mobile, hide overlay as soon as play is pressed
