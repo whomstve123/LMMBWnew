@@ -117,48 +117,48 @@ export async function combineStems(stemPaths: Record<string, string>, outputPath
  * @returns The path to the generated audio file
  */
 export async function processAudioJob(trackId: string, stemUrls: Record<string, string>): Promise<string> {
-  // Create output directory if it doesn't exist
-  const outputDir = path.join(process.cwd(), "public", "generated")
-  fs.mkdirSync(outputDir, { recursive: true })
+  // Use /tmp for output directory in serverless environments
+  const outputDir = "/tmp/generated";
+  fs.mkdirSync(outputDir, { recursive: true });
 
-  const outputPath = path.join(outputDir, `${trackId}.mp3`)
+  const outputPath = path.join(outputDir, `${trackId}.mp3`);
 
   try {
     // Download the stems
-    const localStemPaths = await downloadStems(stemUrls)
+    const localStemPaths = await downloadStems(stemUrls);
 
     // Combine the stems
-    await combineStems(localStemPaths, outputPath)
+    await combineStems(localStemPaths, outputPath);
 
     // Clean up the temporary files
-    const tmpDir = path.dirname(Object.values(localStemPaths)[0])
-    fs.rmSync(tmpDir, { recursive: true, force: true })
+    const tmpDir = path.dirname(Object.values(localStemPaths)[0]);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
 
     // Upload to Supabase storage
-    const { createClient } = await import("@supabase/supabase-js")
-    const SUPABASE_URL = process.env.SUPABASE_URL!
-    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-    const fileBuffer = fs.readFileSync(outputPath)
-    const supabasePath = `${trackId}.mp3`
+    const { createClient } = await import("@supabase/supabase-js");
+    const SUPABASE_URL = process.env.SUPABASE_URL!;
+    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const fileBuffer = fs.readFileSync(outputPath);
+    const supabasePath = `${trackId}.mp3`;
     const { data, error } = await supabase.storage.from("generated").upload(supabasePath, fileBuffer, {
       contentType: "audio/mpeg",
       upsert: true,
-    })
+    });
     if (error) {
-      console.error("[audio-processor] Supabase upload error:", error)
+      console.error("[audio-processor] Supabase upload error:", error);
       // Still return local path for debugging
-      return `/generated/${trackId}.mp3`
+      return `/generated/${trackId}.mp3`;
     }
     // Get public URL
-    const { data: publicUrlData } = supabase.storage.from("generated").getPublicUrl(supabasePath)
+    const { data: publicUrlData } = supabase.storage.from("generated").getPublicUrl(supabasePath);
     if (!publicUrlData || !publicUrlData.publicUrl) {
-      console.error("[audio-processor] Could not get public URL for uploaded audio.")
-      return `/generated/${trackId}.mp3`
+      console.error("[audio-processor] Could not get public URL for uploaded audio.");
+      return `/generated/${trackId}.mp3`;
     }
-    return publicUrlData.publicUrl
+    return publicUrlData.publicUrl;
   } catch (error) {
-    console.error("Error processing audio job:", error)
-    throw error
+    console.error("Error processing audio job:", error);
+    throw error;
   }
 }
