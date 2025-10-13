@@ -40,11 +40,11 @@ export default function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
       }, 1800)
     } else {
       setError("Incorrect password")
-        setFlashRed(true)
-        setTimeout(() => {
-          setFlashRed(false)
-          setError("")
-        }, 400)
+      setFlashRed(true)
+      setTimeout(() => {
+        setFlashRed(false)
+        setError("")
+      }, 900)
     }
   }
   // Show dots on lines when user starts typing
@@ -59,14 +59,14 @@ export default function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black min-h-screen">
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style={{zIndex: 1}}>
+      <div className={`absolute inset-0 flex items-center justify-center pointer-events-none select-none ${flashRed ? 'animate-flash-red' : ''}`} style={{zIndex: 1}}>
         <BohrModelSVG phase={(!animating && !unlocked) ? phase : phase} randomAngles={randomAnglesRef.current} />
         {phase === 'dissolve' && <PixelDissolveOverlay />}
       </div>
       {/* Centered password form, visually inside the Bohr frame, never overlapping lines */}
       {!animating && !unlocked && !hideText && (
         <form onSubmit={handleSubmit} className="absolute left-1/2 top-1/2 z-10 flex flex-col items-center" style={{transform: 'translate(-50%, -50%)', width: 180, minHeight: 70}}>
-          <label className={`mb-3 text-base font-gothic tracking-widest ${flashRed ? 'animate-flash-red text-[#ff3b3b]' : 'text-[#ebfdc8]'}`}>Enter Password</label>
+          <label className={`mb-3 text-base font-gothic tracking-widest ${flashRed ? 'animate-flash-red text-[#ff3b3b]' : 'text-[#ebfdc8]'}`}>{flashRed ? 'Incorrect Password' : 'Enter Password'}</label>
           <input
             type="password"
             value={password}
