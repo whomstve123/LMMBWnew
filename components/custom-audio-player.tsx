@@ -6,9 +6,10 @@ interface CustomAudioPlayerProps {
   src: string
   onLoadedData?: () => void
   onError?: (error: any) => void
+  onPlay?: () => void
 }
 
-export default function CustomAudioPlayer({ src, onLoadedData, onError }: CustomAudioPlayerProps) {
+export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }: CustomAudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -70,6 +71,7 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError }: Custom
     } else {
       audio.play()
       startVisualizer()
+      if (onPlay) onPlay();
     }
     setIsPlaying(!isPlaying)
   }

@@ -8,6 +8,13 @@ import CustomAudioPlayer from "@/components/custom-audio-player"
 export default function YourSoundPage() {
   // Timeout ref for fallback
   const audioLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  // Mobile detection
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  useEffect(() => {
+    if (isMobile) {
+      console.log('MOBILE DETECTED: CustomAudioPlayer/overlay bug reproduction context')
+    }
+  }, [isMobile])
   const [faceHash, setFaceHash] = useState<string | null>(null)
   const [trackId, setTrackId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -153,6 +160,12 @@ export default function YourSoundPage() {
                     <CustomAudioPlayer
                       src={audioUrl}
                       onLoadedData={handleAudioLoaded}
+                      onPlay={() => {
+                        // On mobile, hide overlay as soon as play is pressed
+                        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                          setShowProgressiveAnimation(false)
+                        }
+                      }}
                       onError={(e) => {
                         console.error("Audio playback error:", e)
                         setError("Error playing audio. Please try again.")
