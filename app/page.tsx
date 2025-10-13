@@ -6,6 +6,7 @@ import dynamic from "next/dynamic"
 import CaptureAnimation from "@/components/capture-animation"
 import GlitchOverlay from "@/components/glitch-overlay"
 import type { WebcamRef } from "@/components/simple-webcam"
+import PasswordGate from "./password-gate"
 
 const SimpleWebcam = dynamic(() => import("@/components/simple-webcam"), {
   ssr: false,
@@ -15,6 +16,7 @@ const SimplifiedFaceDetector = dynamic(() => import("@/components/simplified-fac
 })
 
 export default function Home() {
+  const [unlocked, setUnlocked] = useState(false)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [showAnimation, setShowAnimation] = useState(false)
   const [faceDescriptor, setFaceDescriptor] = useState<number[] | null>(null)
@@ -109,6 +111,10 @@ export default function Home() {
       setErrorMessage("Something went wrong while generating your track. Please try again.")
       setIsGenerating(false)
     }
+  }
+
+  if (!unlocked) {
+    return <PasswordGate onUnlock={() => setUnlocked(true)} />
   }
 
   return (
