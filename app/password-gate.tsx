@@ -85,7 +85,6 @@ export default function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
                 <path d="M4 9h8M10 7l2 2-2 2" stroke={flashRed ? '#ff3b3b' : '#ebfdc8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-          {flashRed && <div className={`mt-2 text-xs font-mono ${flashRed ? 'text-[#ff3b3b] animate-flash-red' : 'text-[#ebfdc8]'}`}>Incorrect Password</div>}
         </form>
       )}
     </div>

@@ -31,6 +31,10 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
+    // Force reload audio element to bypass cache
+    audio.src = "";
+    audio.src = src;
+    audio.load();
 
     const handleLoadedData = () => {
       logToServer('[CustomAudioPlayer] loadeddata event fired', {src, duration: audio.duration})
