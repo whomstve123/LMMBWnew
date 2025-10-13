@@ -96,7 +96,8 @@ export async function combineStems(stemPaths: Record<string, string>, outputPath
     }
     const filterComplex = `${filterInputs.length > 0 ? filterInputs.join(';') + ';' : ''}${amixInputs.join('')}amix=inputs=${categories.length}:duration=longest:dropout_transition=2`;
 
-    const command = `ffmpeg ${inputs} -filter_complex "${filterComplex}" -c:a libmp3lame -q:a 2 "${outputPath}"`;
+  const ffmpegPath = path.resolve(process.cwd(), 'bin/ffmpeg');
+  const command = `${ffmpegPath} ${inputs} -filter_complex "${filterComplex}" -c:a libmp3lame -q:a 2 "${outputPath}"`;
     console.log('[audio-processor] Running ffmpeg command:', command);
 
     // Execute the ffmpeg command
