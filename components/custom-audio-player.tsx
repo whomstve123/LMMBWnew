@@ -1,4 +1,6 @@
 "use client"
+import React, { useState, useRef, useEffect } from "react"
+
 // Helper to send logs to server
 function logToServer(message: string, data?: any) {
   fetch('/api/client-log', {
@@ -7,8 +9,6 @@ function logToServer(message: string, data?: any) {
     body: JSON.stringify({ message, data, ts: Date.now() })
   }).catch(() => {})
 }
-
-import React, { useState, useRef, useEffect } from "react"
 
 interface CustomAudioPlayerProps {
   src: string
@@ -79,12 +79,15 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
     const audio = audioRef.current
     if (!audio) return
 
+    logToServer('[CustomAudioPlayer] togglePlayPause', {isPlaying, src})
     if (isPlaying) {
       audio.pause()
       stopVisualizer()
+      logToServer('[CustomAudioPlayer] pause triggered', {src})
     } else {
       audio.play()
       startVisualizer()
+      logToServer('[CustomAudioPlayer] play triggered', {src})
       if (onPlay) onPlay();
     }
     setIsPlaying(!isPlaying)

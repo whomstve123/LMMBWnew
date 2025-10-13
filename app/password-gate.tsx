@@ -71,12 +71,12 @@ export default function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
           />
           <button
             type="submit"
-            className="mt-3 flex items-center justify-center w-8 h-8 rounded-full bg-[#ebfdc8] hover:bg-[#d0e6a5] transition-colors shadow-md"
+            className="mt-3 flex items-center justify-center w-8 h-8 rounded-full bg-[#2d2d2d] hover:bg-[#1a1a1a] transition-colors shadow-md"
             aria-label="Go"
             style={{border: 'none'}}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 9h8M10 7l2 2-2 2" stroke="#2d2d2d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M4 9h8M10 7l2 2-2 2" stroke="#ebfdc8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
           {error && <div className="mt-2 text-[#ebfdc8] text-xs font-mono">{error}</div>}
