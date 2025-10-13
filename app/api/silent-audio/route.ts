@@ -13,8 +13,8 @@ export async function GET(request: Request) {
     const url = new URL(request.url)
     const id = url.searchParams.get("id") || crypto.randomBytes(5).toString("hex")
 
-    // Create output directory if it doesn't exist
-    const outputDir = path.join(process.cwd(), "public", "generated")
+    // Use /tmp for output directory
+    const outputDir = "/tmp/generated"
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true })
     }
@@ -25,17 +25,34 @@ export async function GET(request: Request) {
     const command = `ffmpeg -f lavfi -i anullsrc=r=44100:cl=stereo -t 10 -c:a libmp3lame -q:a 4 "${outputPath}"`
     await execPromise(command)
 
-    // Return the URL to the generated audio file
-    const audioUrl = `/generated/silent-${id}.mp3`
-
+    // Upload to Supabase storage
+    const { createClient } = await import("@supabase/supabase-js")
+    const SUPABASE_URL = process.env.SUPABASE_URL!
+    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    const fileBuffer = fs.readFileSync(outputPath)
+    const supabasePath = `silent-${id}.mp3`
+    const { data, error } = await supabase.storage.from("generated").upload(supabasePath, fileBuffer, {
+      contentType: "audio/mpeg",
+      upsert: true,
+    })
+    if (error) {
+      console.error("[silent-audio] Supabase upload error:", error)
+      return NextResponse.json({ error: "Failed to upload silent audio to Supabase", details: error.message }, { status: 500 })
+    }
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage.from("generated").getPublicUrl(supabasePath)
+    if (!publicUrlData || !publicUrlData.publicUrl) {
+      console.error("[silent-audio] Could not get public URL for uploaded audio.")
+      return NextResponse.json({ error: "Failed to get public URL for silent audio" }, { status: 500 })
+    }
     return NextResponse.json({
       success: true,
-      audioUrl,
+      audioUrl: publicUrlData.publicUrl,
       id,
     })
   } catch (error) {
     console.error("Silent audio generation error:", error)
-
     return NextResponse.json(
       {
         error: "Failed to generate silent audio",
