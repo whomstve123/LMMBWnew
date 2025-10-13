@@ -1,3 +1,11 @@
+// Helper to send logs to server
+function logToServer(message: string, data?: any) {
+  fetch('/api/client-log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, data, ts: Date.now() })
+  }).catch(() => {})
+}
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
@@ -25,6 +33,7 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
     if (!audio) return
 
     const handleLoadedData = () => {
+      logToServer('[CustomAudioPlayer] loadeddata event fired', {src, duration: audio.duration})
       setIsLoaded(true)
       setDuration(audio.duration)
       setupAudioContext()
@@ -33,17 +42,19 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime)
+      logToServer('[CustomAudioPlayer] timeupdate', {currentTime: audio.currentTime})
     }
 
     const handleEnded = () => {
       setIsPlaying(false)
       setCurrentTime(0)
       stopVisualizer()
+      logToServer('[CustomAudioPlayer] ended event')
     }
 
     const handleError = (e: any) => {
-      console.error("Audio error:", e)
-      setError("PLAYBACK ERROR")
+      logToServer('[CustomAudioPlayer] Audio error', e)
+      setError('PLAYBACK ERROR')
       onError?.(e)
     }
 
@@ -52,12 +63,15 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
     audio.addEventListener('ended', handleEnded)
     audio.addEventListener('error', handleError)
 
+    logToServer('[CustomAudioPlayer] Event listeners attached', {src})
+
     return () => {
       audio.removeEventListener('loadeddata', handleLoadedData)
       audio.removeEventListener('timeupdate', handleTimeUpdate)
       audio.removeEventListener('ended', handleEnded)
       audio.removeEventListener('error', handleError)
       stopVisualizer()
+      logToServer('[CustomAudioPlayer] Event listeners detached', {src})
     }
   }, [onLoadedData, onError])
 
