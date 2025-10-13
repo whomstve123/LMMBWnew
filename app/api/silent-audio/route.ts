@@ -34,6 +34,7 @@ export async function GET(request: Request) {
     const supabasePath = `silent-${id}.mp3`
     const { data, error } = await supabase.storage.from("generated").upload(supabasePath, fileBuffer, {
       contentType: "audio/mpeg",
+      cacheControl: "no-cache, no-store, must-revalidate",
       upsert: true,
     })
     if (error) {
