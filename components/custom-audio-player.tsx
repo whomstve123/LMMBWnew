@@ -1,3 +1,4 @@
+"use client"
 // Helper to send logs to server
 function logToServer(message: string, data?: any) {
   fetch('/api/client-log', {
@@ -6,7 +7,6 @@ function logToServer(message: string, data?: any) {
     body: JSON.stringify({ message, data, ts: Date.now() })
   }).catch(() => {})
 }
-"use client"
 
 import React, { useState, useRef, useEffect } from "react"
 
