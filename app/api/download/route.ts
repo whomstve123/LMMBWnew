@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server"
-import path from "path"
-import fs from "fs"
 import crypto from "crypto"
+import { createClient } from "@supabase/supabase-js"
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+const bucketName = "generated"
+
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 export async function GET(request: Request) {
   try {
@@ -14,23 +19,23 @@ export async function GET(request: Request) {
 
     // Generate track ID from hash
     const trackId = crypto.createHash("md5").update(hash).digest("hex").substring(0, 10)
+    const filePath = `${trackId}.mp3`
 
-    // Path to the generated audio file
-    const filePath = path.join(process.cwd(), "public", "generated", `${trackId}.mp3`)
-
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json({ error: "Audio file not found" }, { status: 404 })
+    // Fetch file from Supabase Storage
+    const { data, error } = await supabase.storage.from(bucketName).download(filePath)
+    if (error || !data) {
+      return NextResponse.json({ error: "Audio file not found in Supabase Storage" }, { status: 404 })
     }
 
-    // Read the file
-    const fileBuffer = fs.readFileSync(filePath)
+    // Read the file as a buffer
+    const arrayBuffer = await data.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
 
     // Return the file with appropriate headers
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(buffer, {
       headers: {
         "Content-Type": "audio/mpeg",
-        "Content-Disposition": `attachment; filename="mind-unwanderer-${trackId}.mp3"`,
+        "Content-Disposition": `attachment; filename=\"mind-unwanderer-${trackId}.mp3\"`,
       },
     })
   } catch (error) {
