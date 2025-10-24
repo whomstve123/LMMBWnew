@@ -3,11 +3,26 @@ import { useEffect, useState } from "react"
 
 export default function FullscreenToggle() {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false)
+  const [isMobile, setIsMobile] = useState<boolean>(false)
 
   useEffect(() => {
     const handler = () => setIsFullscreen(Boolean(document.fullscreenElement))
     document.addEventListener('fullscreenchange', handler)
     return () => document.removeEventListener('fullscreenchange', handler)
+  }, [])
+
+  useEffect(() => {
+    // Consider mobile as width < 768px
+    const mq = window.matchMedia('(max-width: 767px)')
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    setIsMobile(mq.matches)
+    // Older browsers use addListener
+    if (mq.addEventListener) mq.addEventListener('change', onChange)
+    else mq.addListener(onChange as any)
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener('change', onChange)
+      else mq.removeListener(onChange as any)
+    }
   }, [])
 
   const enterFullscreen = async () => {
@@ -41,7 +56,8 @@ export default function FullscreenToggle() {
 
   return (
     // Hide the control while fullscreen is active so user exits with Escape only
-    !isFullscreen ? (
+    // Also hide the Enter Fullscreen control on mobile devices
+    !isFullscreen && !isMobile ? (
       <div style={{ position: 'fixed', top: 12, right: 12, zIndex: 60 }}>
         <button
           onClick={toggle}
