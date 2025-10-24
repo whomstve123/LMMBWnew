@@ -277,24 +277,24 @@ export default function Home() {
             </button>
           )}
         </div>
-        {/* Help link below capture button */}
-        <div className="mt-1 text-center">
-          <button
-            onClick={() => { if (!isDetecting && !isCapturing) setShowHelp(true) }}
-            className={`text-black font-bold ${(isDetecting || isCapturing) ? 'cursor-not-allowed opacity-50' : ''}`}
-            style={{ fontFamily: 'Times New Roman, Times, serif' }}
-            aria-disabled={isDetecting || isCapturing}
-            disabled={isDetecting || isCapturing}
-          >
-            What's going on?
-          </button>
-        </div>
+        {/* Help link below capture button - do not show while capturing/detecting (initial overlay) */}
+        {!isDetecting && !isCapturing && (
+          <div className="mt-1 text-center">
+            <button
+              onClick={() => setShowHelp(true)}
+              className={`text-black font-bold`}
+              style={{ fontFamily: 'Times New Roman, Times, serif' }}
+            >
+              What's going on?
+            </button>
+          </div>
+        )}
 
-        {/* Help modal overlay */}
+        {/* Help modal overlay (upscaled for webcam page) */}
         {showHelp && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-md" onClick={() => setShowHelp(false)} />
-            <div className="relative max-w-3xl mx-4">
+            <div className="relative max-w-4xl mx-4" style={{ transform: 'scale(1.2)', transformOrigin: 'center' }}>
               <button onClick={() => setShowHelp(false)} aria-label="Close" className="absolute right-2 top-2 text-white font-bold text-2xl z-30">×</button>
               {/* Transparent container so the image displays edge-to-edge */}
               <div className="relative">

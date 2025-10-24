@@ -174,8 +174,34 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
   }
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
+  const [showHelp, setShowHelp] = useState(false)
+
+  function HelpImageFallback() {
+    const [failed, setFailed] = useState(false)
+    return failed ? (
+      <div className="p-6 text-center text-gray-800">Help image failed to load. Please reach out if you need more information.</div>
+    ) : (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src="/mindunwanderertechexp.jpg"
+        alt="Help"
+        onError={() => setFailed(true)}
+        style={{
+          transform: 'scale(1.2)',
+          transformOrigin: 'center',
+          display: 'block',
+          maxWidth: 'none',
+          width: '120vw',
+          height: 'auto',
+          maxHeight: '92vh',
+          objectFit: 'cover',
+        }}
+      />
+    )
+  }
 
   return (
+    <>
       <div className="w-full bg-[#1a1a1a] border-2 border-[#2d2d2d] relative" style={{
         borderStyle: 'solid',
         boxShadow: 'none',
@@ -332,6 +358,31 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
       )}
       
       {/* Removed error overlay */}
-    </div>
+      </div>
+      {/* Help / info link placed under the media player */}
+      <div className="mt-2 text-center">
+        {/* Replace the green "What's going on?" button with an inline help pane after the player loads.
+            The full-screen modal was too large for the media player; keep help inline here and only allow it after load. */}
+        {!showHelp ? (
+          <button
+            onClick={() => { if (isLoaded) setShowHelp(true) }}
+            className={`text-[#9fffb0] text-sm underline decoration-[#9fffb0] ${!isLoaded ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!isLoaded}
+            title={!isLoaded ? 'Help available after player loads' : 'Show help'}
+          >
+            What's going on?
+          </button>
+        ) : (
+          <div className="mx-auto mt-2 p-3 bg-[#0a0a0a] border border-[#2d2d2d] max-w-xl rounded">
+            <div className="flex justify-end">
+              <button onClick={() => setShowHelp(false)} aria-label="Close help" className="text-[#9fffb0] font-bold px-2">Close</button>
+            </div>
+            <div className="mt-1">
+              <HelpImageFallback />
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   )
 }

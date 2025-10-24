@@ -27,6 +27,32 @@ export default function YourSoundPage() {
   const [isRequesting, setIsRequesting] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const router = useRouter()
+  const [showHelp, setShowHelp] = useState(false)
+
+  function HelpImageFallback() {
+    const [failed, setFailed] = useState(false)
+    return failed ? (
+      <div className="p-6 text-center text-gray-800">Help image failed to load. Please reach out if you need more information.</div>
+    ) : (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src="/mindunwanderertechexp.jpg"
+        alt="Help"
+        onError={() => setFailed(true)}
+        style={{
+          // Zoom image ~115% to fill more of the viewport (adjusted to ~115%)
+          transform: 'scale(1.15)',
+          transformOrigin: 'center',
+          display: 'block',
+          maxWidth: 'none',
+          width: '115vw',
+          height: 'auto',
+          maxHeight: '90vh',
+          objectFit: 'cover',
+        }}
+      />
+    )
+  }
 
   useEffect(() => {
     // Get face descriptor from sessionStorage
@@ -204,6 +230,30 @@ export default function YourSoundPage() {
             </div>
           </div>
         </div>
+        {/* Help: render a fixed bottom button only when the audio player is ready (not initializing) */}
+        {!isLoading && !showProgressiveAnimation && (
+          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40">
+            <button
+              onClick={() => setShowHelp(true)}
+              className="bg-black text-white font-bold px-6 py-2 rounded"
+              style={{ fontFamily: 'Times New Roman, Times, serif' }}
+            >
+              What's going on?
+            </button>
+          </div>
+        )}
+
+        {showHelp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-md" onClick={() => setShowHelp(false)} />
+            <div className="relative max-w-4xl mx-4" style={{ transform: 'scale(1.2)', transformOrigin: 'center' }}>
+              <button onClick={() => setShowHelp(false)} aria-label="Close" className="absolute right-2 top-2 text-white font-bold text-2xl z-30">×</button>
+              <div className="relative">
+                <HelpImageFallback />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
     </>

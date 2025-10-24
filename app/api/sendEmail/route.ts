@@ -64,15 +64,14 @@ export async function POST(request: Request) {
         `<p style='margin: 10px 0 0 0;'>` +
         `<a href='${audioUrl}' style='color: #ebfdc8; text-decoration: none; background: #2a2a2a; padding: 8px 16px; border: 1px solid #ebfdc8; display: inline-block; margin-top: 10px;' download>DOWNLOAD YOUR TRACK</a>` +
         `</p>` +
-        `</div>` +
-        `<p>This link will allow you to download your personalized sound file that has been specifically created based on your unique facial biometric data.</p>` +
-        `<p style='margin-top: 30px; opacity: 0.8; font-size: 14px;'>Best regards,<br>Jill</p>` +
-        `<p style='margin-top: 20px; font-size: 11px; opacity: 0.6;'>Generated: ${new Date().toLocaleString()}</p>` +
-    // Add help image link/footer
-    `<div style='margin-top:14px; padding-top:10px; border-top:1px solid #2a2a2a; font-size:12px; opacity:0.85;'>` +
-    `<a href='${helpImageUrl}' style='color:#9fffb0; text-decoration:none;'>How to position your face for the best capture (help image)</a>` +
     `</div>` +
-    `</div>`
+  `<p>This link will allow you to download your personalized sound file that has been specifically created based on your unique facial biometric data.</p>` +
+  `<div style='margin-top:10px;'>` +
+    `<a href='${helpImageUrl}' style='color:#000000; font-weight:700; font-family: "Times New Roman", Times, serif; text-decoration:none; display:inline-block; margin-top:6px;'>What\'s going on?</a>` +
+    `</div>` +
+    `<p style='margin-top: 30px; opacity: 0.8; font-size: 14px;'>Best regards,<br>Jill</p>` +
+    `<p style='margin-top: 20px; font-size: 11px; opacity: 0.6;'>Generated: ${new Date().toLocaleString()}</p>` +
+  `</div>`
     };
 
     const mailOptions = {
