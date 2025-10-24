@@ -49,8 +49,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, base64Audio, trackId })
   } catch (err) {
-    console.error("Track generation error:", err)
-    return NextResponse.json({ error: "Failed to generate track" }, { status: 500 })
+    console.error("Track creation error:", err)
+    return NextResponse.json({ error: "Failed to create track" }, { status: 500 })
   }
 }
 

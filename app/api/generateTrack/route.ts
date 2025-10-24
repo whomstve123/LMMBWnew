@@ -115,7 +115,7 @@ export async function POST(request: Request) {
         audioUrl: matchedMapping.audio_url,
         cached: true,
         accessCount: matchedMapping.generated_count + 1,
-        message: "Generated your unique sound based on your biometric data. This track is now permanently linked to your face."
+        message: "Created your unique sound based on your biometric data. This track is now permanently linked to your face."
       });
     }
     // If not found, generate audio
@@ -146,12 +146,12 @@ export async function POST(request: Request) {
       audioUrl = await processAudioJob(trackId, selectedStems);
     } catch (err) {
       return NextResponse.json({
-        error: 'Failed to generate audio',
+        error: 'Failed to create audio',
         details: err instanceof Error ? err.message : String(err),
         stems: selectedStems,
         trackId,
         audioUrl,
-        message: 'Error occurred during audio generation. See details.',
+        message: 'Error occurred during audio creation. See details.',
       }, { status: 500 });
     }
     // INSERT
@@ -174,7 +174,7 @@ export async function POST(request: Request) {
       audioUrl,
       cached: false,
       accessCount: 1,
-      message: "Generated your unique sound based on your biometric data. This track is now permanently linked to your face."
+      message: "Created your unique sound based on your biometric data. This track is now permanently linked to your face."
     });
   } catch (error) {
     console.error('[generateTrack] Handler error (outer catch):', error);

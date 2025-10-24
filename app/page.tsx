@@ -119,14 +119,14 @@ export default function Home() {
       const data = await res.json()
 
       if (!res.ok || !data.audioUrl) {
-        throw new Error(data.error || "Track generation failed")
+        throw new Error(data.error || "Track creation failed")
       }
 
       sessionStorage.setItem("audioUrl", data.audioUrl)
       router.push("/email")
     } catch (err: any) {
       console.error(err)
-      setErrorMessage("Something went wrong while generating your track. Please try again.")
+      setErrorMessage("Something went wrong while creating your track. Please try again.")
       setIsGenerating(false)
     }
   }
@@ -229,13 +229,13 @@ export default function Home() {
             <div className="text-center tracking-extra-wide leading-none">
               JILL BLUTT&apos;S GROUNDBREAKING
               <br />
-              TECHNOLOGY UTILIZES BIOMETRIC FACTIAL-
+              TECHNOLOGY UTILIZES BIOMETRIC FACIAL-
               <br />
               RECOGNITION DATA TO EXTRACT THE
               <br />
               UNIQUE SONIC PROFILE OF THE AFFLICTED&apos;S
               <br />
-              MIND-WANDERER COLONY
+              MIND WANDERER COLONY
             </div>
           </div>
         </div>
@@ -273,7 +273,7 @@ export default function Home() {
               className="px-12 py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic hover:bg-[#2d2d2d] hover:text-[#e8e6d9] transition-colors"
               disabled={isGenerating}
             >
-              {isGenerating ? "GENERATING..." : "PROCEED"}
+              {isGenerating ? "CREATING..." : "PROCEED"}
             </button>
           )}
         </div>

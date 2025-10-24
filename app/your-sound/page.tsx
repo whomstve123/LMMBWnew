@@ -35,22 +35,7 @@ export default function YourSoundPage() {
       <div className="p-6 text-center text-gray-800">Help image failed to load. Please reach out if you need more information.</div>
     ) : (
       // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src="/mindunwanderertechexp.jpg"
-        alt="Help"
-        onError={() => setFailed(true)}
-        style={{
-          // Zoom image ~115% to fill more of the viewport (adjusted to ~115%)
-          transform: 'scale(1.15)',
-          transformOrigin: 'center',
-          display: 'block',
-          maxWidth: 'none',
-          width: '115vw',
-          height: 'auto',
-          maxHeight: '90vh',
-          objectFit: 'cover',
-        }}
-      />
+      <img src="/mindunwanderertechexp.jpg" alt="Help" className="max-w-full max-h-[80vh] object-contain" onError={() => setFailed(true)} />
     )
   }
 
@@ -110,8 +95,8 @@ export default function YourSoundPage() {
       setSelectedStems(data.selectedStems)
       // Don't hide progressive animation yet - wait for media to load
     } catch (err) {
-      console.error("Track generation error:", err)
-      setError(`Failed to generate your sound: ${err instanceof Error ? err.message : String(err)}`)
+      console.error("Track creation error:", err)
+      setError(`Failed to create your sound: ${err instanceof Error ? err.message : String(err)}`)
       // Hide progressive animation on error
       setShowProgressiveAnimation(false)
     } finally {
@@ -185,6 +170,7 @@ export default function YourSoundPage() {
                   {audioUrl && (
                     <CustomAudioPlayer
                       src={audioUrl + (trackId ? `?v=${trackId}&t=${Date.now()}` : `?t=${Date.now()}`)}
+                      hideInlineHelp={true}
                       onLoadedData={handleAudioLoaded}
                       onPlay={() => {
                         // On mobile, hide overlay as soon as play is pressed
@@ -201,7 +187,18 @@ export default function YourSoundPage() {
                   )}
 
                   {emailSent && (
-                    <p className="text-[#2d2d2d] text-sm">A download link has been sent to your email address.</p>
+                    <>
+                      <p className="text-[#2d2d2d] text-sm">A download link has been sent to your email address.</p>
+                      <div className="mt-3 text-center">
+                        <button
+                          onClick={() => setShowHelp(true)}
+                          className={`text-black font-bold`}
+                          style={{ fontFamily: 'Times New Roman, Times, serif', background: 'transparent' }}
+                        >
+                          What's going on?
+                        </button>
+                      </div>
+                    </>
                   )}
 
                   {selectedStems && (
@@ -230,18 +227,7 @@ export default function YourSoundPage() {
             </div>
           </div>
         </div>
-        {/* Help: render a fixed bottom button only when the audio player is ready (not initializing) */}
-        {!isLoading && !showProgressiveAnimation && (
-          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40">
-            <button
-              onClick={() => setShowHelp(true)}
-              className="bg-black text-white font-bold px-6 py-2 rounded"
-              style={{ fontFamily: 'Times New Roman, Times, serif' }}
-            >
-              What's going on?
-            </button>
-          </div>
-        )}
+        {/* Help button is rendered inline under the email-sent copy (matching the home page) */}
 
         {showHelp && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">

@@ -56,7 +56,7 @@ export async function GET(request: Request) {
     console.error("Silent audio generation error:", error)
     return NextResponse.json(
       {
-        error: "Failed to generate silent audio",
+        error: "Failed to create silent audio",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },

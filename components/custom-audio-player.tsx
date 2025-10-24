@@ -15,9 +15,10 @@ interface CustomAudioPlayerProps {
   onLoadedData?: () => void
   onError?: (error: any) => void
   onPlay?: () => void
+  hideInlineHelp?: boolean
 }
 
-export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }: CustomAudioPlayerProps) {
+export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay, hideInlineHelp = false }: CustomAudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -359,30 +360,32 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
       
       {/* Removed error overlay */}
       </div>
-      {/* Help / info link placed under the media player */}
-      <div className="mt-2 text-center">
-        {/* Replace the green "What's going on?" button with an inline help pane after the player loads.
-            The full-screen modal was too large for the media player; keep help inline here and only allow it after load. */}
-        {!showHelp ? (
-          <button
-            onClick={() => { if (isLoaded) setShowHelp(true) }}
-            className={`text-[#9fffb0] text-sm underline decoration-[#9fffb0] ${!isLoaded ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={!isLoaded}
-            title={!isLoaded ? 'Help available after player loads' : 'Show help'}
-          >
-            What's going on?
-          </button>
-        ) : (
-          <div className="mx-auto mt-2 p-3 bg-[#0a0a0a] border border-[#2d2d2d] max-w-xl rounded">
-            <div className="flex justify-end">
-              <button onClick={() => setShowHelp(false)} aria-label="Close help" className="text-[#9fffb0] font-bold px-2">Close</button>
+      {/* Help / info link placed under the media player (can be hidden by parent) */}
+      {!hideInlineHelp && (
+        <div className="mt-2 text-center">
+          {/* Replace the green "What's going on?" button with an inline help pane after the player loads.
+              The full-screen modal was too large for the media player; keep help inline here and only allow it after load. */}
+          {!showHelp ? (
+            <button
+              onClick={() => { if (isLoaded) setShowHelp(true) }}
+              className={`text-[#9fffb0] text-sm underline decoration-[#9fffb0] ${!isLoaded ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!isLoaded}
+              title={!isLoaded ? 'Help available after player loads' : 'Show help'}
+            >
+              What's going on?
+            </button>
+          ) : (
+            <div className="mx-auto mt-2 p-3 bg-[#0a0a0a] border border-[#2d2d2d] max-w-xl rounded">
+              <div className="flex justify-end">
+                <button onClick={() => setShowHelp(false)} aria-label="Close help" className="text-[#9fffb0] font-bold px-2">Close</button>
+              </div>
+              <div className="mt-1">
+                <HelpImageFallback />
+              </div>
             </div>
-            <div className="mt-1">
-              <HelpImageFallback />
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </>
   )
 }

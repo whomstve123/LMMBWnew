@@ -58,7 +58,7 @@ export async function POST(request: Request) {
         `<div style='font-family: Courier New, monospace; background-color: #000; color: #ebfdc8; padding: 20px; border: 2px solid #ebfdc8; max-width: 600px;'>` +
         `<h1 style='text-align: center; margin-bottom: 20px; text-shadow: 0 0 10px #ebfdc8;'>MIND UN-WANDERER</h1>` +
         `<p>Thank you for using Jill Blutt's Revolutionary Mind Un-Wanderer.</p>` +
-        `<p>Your unique sound has been generated based on your biometric data.</p>` +
+  `<p>Your unique sound has been created based on your biometric data.</p>` +
         `<div style='background: #1a1a1a; padding: 15px; margin: 20px 0; border-left: 3px solid #ebfdc8;'>` +
         `<p style='margin: 0;'><strong>Track ID:</strong> ${trackId}</p>` +
         `<p style='margin: 10px 0 0 0;'>` +
@@ -67,10 +67,10 @@ export async function POST(request: Request) {
     `</div>` +
   `<p>This link will allow you to download your personalized sound file that has been specifically created based on your unique facial biometric data.</p>` +
   `<div style='margin-top:10px;'>` +
-    `<a href='${helpImageUrl}' style='color:#000000; font-weight:700; font-family: "Times New Roman", Times, serif; text-decoration:none; display:inline-block; margin-top:6px;'>What\'s going on?</a>` +
+    `<a href='${helpImageUrl}' style='color:#9fffb0; font-weight:700; font-family: "Times New Roman", Times, serif; text-decoration:none; display:inline-block; margin-top:6px;'>What\'s going on?</a>` +
     `</div>` +
     `<p style='margin-top: 30px; opacity: 0.8; font-size: 14px;'>Best regards,<br>Jill</p>` +
-    `<p style='margin-top: 20px; font-size: 11px; opacity: 0.6;'>Generated: ${new Date().toLocaleString()}</p>` +
+  `<p style='margin-top: 20px; font-size: 11px; opacity: 0.6;'>Created: ${new Date().toLocaleString()}</p>` +
   `</div>`
     };
 

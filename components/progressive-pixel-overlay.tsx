@@ -314,7 +314,7 @@ export default function ProgressivePixelOverlay({ isVisible, onComplete }: Progr
           {progress < 20 && "INITIALIZING..."}
           {progress >= 20 && progress < 40 && "PROCESSING..."}
           {progress >= 40 && progress < 60 && "ANALYZING..."}
-          {progress >= 60 && progress < 80 && "GENERATING..."}
+          {progress >= 60 && progress < 80 && "CREATING..."}
           {progress >= 80 && progress < 95 && "FINALIZING..."}
           {progress >= 95 && "COMPLETING..."}
         </div>

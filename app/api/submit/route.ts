@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     if (!generateTrackResponse.ok) {
       const errorData = await generateTrackResponse.json();
       console.error('Track generation failed:', errorData);
-      return NextResponse.json({ error: "Failed to generate track" }, { status: 500 });
+      return NextResponse.json({ error: "Failed to create track" }, { status: 500 });
     }
 
     const trackData = await generateTrackResponse.json();
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
     if (!trackId || !audioUrl) {
       console.error('Invalid track data received:', trackData);
-      return NextResponse.json({ error: "Invalid track data generated" }, { status: 500 });
+      return NextResponse.json({ error: "Invalid track data created" }, { status: 500 });
     }
 
     // Step 2: Send the email with the track download link
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
         emailSent: false,
         trackId,
         audioUrl,
-        warning: "Track generated but email delivery failed"
+        warning: "Track created but email delivery failed"
       });
     }
 
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       emailSent: true,
       trackId,
       audioUrl,
-      message: "Track generated and email sent successfully"
+      message: "Track created and email sent successfully"
     });
 
   } catch (error) {
