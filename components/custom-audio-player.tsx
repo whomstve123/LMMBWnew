@@ -37,7 +37,7 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
     audio.load();
 
     const handleLoadedData = () => {
-      logToServer('[CustomAudioPlayer] loadeddata event fired', {src, duration: audio.duration})
+    // logToServer retained for server-side analytics, but avoid console output
       setIsLoaded(true)
       setDuration(audio.duration)
       setupAudioContext()
@@ -46,18 +46,18 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime)
-      logToServer('[CustomAudioPlayer] timeupdate', {currentTime: audio.currentTime})
+  // logToServer('[CustomAudioPlayer] timeupdate', {currentTime: audio.currentTime}) // disabled to reduce client telemetry
     }
 
     const handleEnded = () => {
       setIsPlaying(false)
       setCurrentTime(0)
       stopVisualizer()
-      logToServer('[CustomAudioPlayer] ended event')
+  // logToServer('[CustomAudioPlayer] ended event')
     }
 
     const handleError = (e: any) => {
-      logToServer('[CustomAudioPlayer] Audio error', e)
+  // logToServer('[CustomAudioPlayer] Audio error', e)
       setError('PLAYBACK ERROR')
       onError?.(e)
     }
@@ -67,7 +67,7 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
     audio.addEventListener('ended', handleEnded)
     audio.addEventListener('error', handleError)
 
-    logToServer('[CustomAudioPlayer] Event listeners attached', {src})
+  // Event listeners attached (no client console logging)
 
     return () => {
       audio.removeEventListener('loadeddata', handleLoadedData)
@@ -75,7 +75,7 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
       audio.removeEventListener('ended', handleEnded)
       audio.removeEventListener('error', handleError)
       stopVisualizer()
-      logToServer('[CustomAudioPlayer] Event listeners detached', {src})
+  // Event listeners detached
     }
   }, [onLoadedData, onError])
 
@@ -83,15 +83,15 @@ export default function CustomAudioPlayer({ src, onLoadedData, onError, onPlay }
     const audio = audioRef.current
     if (!audio) return
 
-    logToServer('[CustomAudioPlayer] togglePlayPause', {isPlaying, src})
+  // togglePlayPause event (no client console logging)
     if (isPlaying) {
       audio.pause()
       stopVisualizer()
-      logToServer('[CustomAudioPlayer] pause triggered', {src})
+  // pause triggered
     } else {
       audio.play()
       startVisualizer()
-      logToServer('[CustomAudioPlayer] play triggered', {src})
+  // play triggered
       if (onPlay) onPlay();
     }
     setIsPlaying(!isPlaying)

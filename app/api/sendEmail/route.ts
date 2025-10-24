@@ -35,7 +35,12 @@ export async function POST(request: Request) {
 
     const transporter = createTransporter();
 
-    // Test email content or real email content
+  // Build absolute URL for help image using request origin
+  const reqUrl = new URL(request.url)
+  const origin = reqUrl.origin
+  const helpImageUrl = `${origin}/mindunwanderertechexp.jpg`
+
+  // Test email content or real email content
     const emailContent = testMode ? {
       subject: "Test Email from Mind Un-Wanderer",
       html:
@@ -63,7 +68,11 @@ export async function POST(request: Request) {
         `<p>This link will allow you to download your personalized sound file that has been specifically created based on your unique facial biometric data.</p>` +
         `<p style='margin-top: 30px; opacity: 0.8; font-size: 14px;'>Best regards,<br>Jill</p>` +
         `<p style='margin-top: 20px; font-size: 11px; opacity: 0.6;'>Generated: ${new Date().toLocaleString()}</p>` +
-        `</div>`
+    // Add help image link/footer
+    `<div style='margin-top:14px; padding-top:10px; border-top:1px solid #2a2a2a; font-size:12px; opacity:0.85;'>` +
+    `<a href='${helpImageUrl}' style='color:#9fffb0; text-decoration:none;'>How to position your face for the best capture (help image)</a>` +
+    `</div>` +
+    `</div>`
     };
 
     const mailOptions = {

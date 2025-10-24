@@ -55,8 +55,11 @@ export default function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
     }
   }, [password, phase])
 
+  // (no extra effects)
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black min-h-screen">
+      {/* Debug overlay removed for production UX */}
       <div className={`absolute inset-0 flex items-center justify-center pointer-events-none select-none ${flashRed ? 'animate-flash-red' : ''}`} style={{zIndex: 1}}>
         <BohrModelSVG phase={(!animating && !unlocked) ? phase : phase} randomAngles={randomAnglesRef.current} />
         {phase === 'dissolve' && <PixelDissolveOverlay />}

@@ -7,20 +7,24 @@ import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from "re
 interface SimpleWebcamProps {
   onCapture: (imageSrc: string) => void
   onFaceDetected?: (faceHash: string) => void
+  stopAfterCapture?: boolean
   videoRef?: React.RefObject<HTMLVideoElement | null>
 }
 
 // Define a ref type that exposes the capturePhoto method
 export interface WebcamRef {
   capturePhoto: () => Promise<void>
+  stopCamera?: () => void
 }
 
 const SimpleWebcam = forwardRef<WebcamRef, SimpleWebcamProps>(
-  ({ onCapture, onFaceDetected, videoRef: externalVideoRef }, ref) => {
+  ({ onCapture, onFaceDetected, stopAfterCapture = false, videoRef: externalVideoRef }, ref) => {
     const internalVideoRef = useRef<HTMLVideoElement>(null)
     const [isReady, setIsReady] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
 
+  // Keep a ref to the active MediaStream so we can always stop it on cleanup
+  const streamRef = useRef<MediaStream | null>(null)
     // Use the external video ref if provided, otherwise use the internal one
     const videoRef = externalVideoRef || internalVideoRef
 
@@ -29,6 +33,14 @@ const SimpleWebcam = forwardRef<WebcamRef, SimpleWebcamProps>(
       capturePhoto: async () => {
         await capturePhoto()
       },
+      stopCamera: () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+          const stream = videoRef.current.srcObject as MediaStream
+          stream.getTracks().forEach((t) => t.stop())
+          videoRef.current.srcObject = null
+          setIsReady(false)
+        }
+      }
     }))
 
     useEffect(() => {
@@ -45,11 +57,12 @@ const SimpleWebcam = forwardRef<WebcamRef, SimpleWebcamProps>(
 
           // Assign the stream to the video element
           videoRef.current.srcObject = stream
+          // Save stream to ref for reliable cleanup even if videoRef becomes null
+          streamRef.current = stream
 
           // Play the video
           try {
             await videoRef.current.play()
-            console.log("Webcam started successfully")
             setIsReady(true)
           } catch (playError) {
             console.error("Error playing video:", playError)
@@ -62,20 +75,32 @@ const SimpleWebcam = forwardRef<WebcamRef, SimpleWebcamProps>(
       // Start the webcam
       startWebcam()
 
-      // Cleanup function
+      // Cleanup function - stop any active tracks
       return () => {
+        // prefer stored streamRef so we can stop tracks even if video element is gone
+        if (streamRef.current) {
+          try {
+            streamRef.current.getTracks().forEach((track) => track.stop())
+          } catch (e) {
+            console.warn('Error stopping stored streamRef tracks', e)
+          }
+          streamRef.current = null
+        }
         if (videoRef.current && videoRef.current.srcObject) {
-          const stream = videoRef.current.srcObject as MediaStream
-          stream.getTracks().forEach((track) => track.stop())
+          try {
+            const stream = videoRef.current.srcObject as MediaStream
+            stream.getTracks().forEach((track) => track.stop())
+          } catch (e) {
+            console.warn('Error stopping videoRef.srcObject tracks', e)
+          }
+          videoRef.current.srcObject = null
         }
       }
     }, [videoRef])
 
     // Function to capture a photo and process it
     const capturePhoto = async () => {
-      console.log("Capture photo called")
       if (!videoRef.current || isProcessing) {
-        console.log("Video ref not ready or already processing")
         return
       }
 
@@ -102,11 +127,24 @@ const SimpleWebcam = forwardRef<WebcamRef, SimpleWebcamProps>(
         context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height)
 
         // Convert canvas to data URL
-        const imageSrc = canvas.toDataURL("image/jpeg")
-        console.log("Image captured successfully")
+  const imageSrc = canvas.toDataURL("image/jpeg")
 
         // Pass the captured image to the parent component
         onCapture(imageSrc)
+
+        // If component received stopAfterCapture prop, stop the stream to avoid leaving camera on
+        if (stopAfterCapture) {
+          if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream
+            stream.getTracks().forEach((track) => track.stop())
+            videoRef.current.srcObject = null
+            setIsReady(false)
+          }
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach((t) => t.stop())
+            streamRef.current = null
+          }
+        }
 
         // Note: We're not generating a hash here anymore
         // The ValidatedFaceDetector component will handle face detection and hash generation

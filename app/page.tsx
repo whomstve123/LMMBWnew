@@ -11,7 +11,7 @@ import PasswordGate from "./password-gate"
 const SimpleWebcam = dynamic(() => import("@/components/simple-webcam"), {
   ssr: false,
 })
-const SimplifiedFaceDetector = dynamic(() => import("@/components/simplified-face-detector"), {
+const ValidatedFaceDetector = dynamic(() => import("@/components/validated-face-detector"), {
   ssr: false,
 })
 
@@ -25,9 +25,24 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [noFaceWarning, setNoFaceWarning] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [showHelp, setShowHelp] = useState(false)
   const webcamRef = useRef<WebcamRef>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const router = useRouter()
+  const [scanStage, setScanStage] = useState(0)
+  const [isDetecting, setIsDetecting] = useState(false)
+  const DETECTOR_DEFAULT_SCANS = 3
+
+  // Help image fallback component
+  function HelpImageFallback() {
+    const [failed, setFailed] = useState(false)
+    return failed ? (
+      <div className="p-6 text-center text-gray-800">Help image failed to load. Please reach out if you need more information.</div>
+    ) : (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src="/mindunwanderertechexp.jpg" alt="Help" className="max-w-full max-h-[80vh] object-contain" onError={() => setFailed(true)} />
+    )
+  }
 
   useEffect(() => {
     // Clear any existing session data on page load to ensure fresh start
@@ -60,13 +75,16 @@ export default function Home() {
 
   const handleAnimationComplete = () => {
     setShowAnimation(false)
-    setIsCapturing(false)
   // Removed setIsAnalyzing
     // Check for faceDescriptor after animation completes
     const storedDescriptor = sessionStorage.getItem("faceDescriptor")
     if (storedDescriptor) {
       setFaceDescriptor(JSON.parse(storedDescriptor))
       setNoFaceWarning(false)
+      // Stop camera now that we have the descriptor
+      try {
+        webcamRef.current?.stopCamera?.()
+      } catch (e) {}
   // Removed setIsAnalyzing
     }
   }
@@ -119,6 +137,15 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-16">
+      {/* Full-page blocking overlay while detection is running to prevent any clicks/focus changes */}
+      {isDetecting && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-0 z-50 bg-transparent"
+          style={{ pointerEvents: 'auto' }}
+        />
+      )}
       <div className="w-full max-w-6xl mx-auto relative">
         <div className="text-center mb-8">
           <h1 className="text-5xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
@@ -171,12 +198,27 @@ export default function Home() {
                 />
                 <CaptureAnimation isVisible={showAnimation} onAnimationComplete={handleAnimationComplete} />
                 <GlitchOverlay isVisible={isGenerating} />
-                {showAnimation && (
-                  <SimplifiedFaceDetector
-                    videoRef={videoRef}
+                {(showAnimation || isCapturing) && (
+                  <ValidatedFaceDetector
+                    // videoRef may be nullable; validator expects a non-nullable ref type, cast safely
+                    videoRef={videoRef as React.RefObject<HTMLVideoElement>}
                     onFaceDetected={handleFaceDetected}
                     onNoFaceDetected={handleNoFaceDetected}
-                    isCapturing={showAnimation}
+                    isCapturing={showAnimation || isCapturing}
+                    totalScans={DETECTOR_DEFAULT_SCANS}
+                    maxRetries={2}
+                    onScanProgress={(stage, total, detecting) => {
+                      try { console.debug(`[page] scanProgress stage=${stage} total=${total} detecting=${detecting}`) } catch (e) {}
+                      setScanStage(stage)
+                      setIsDetecting(detecting)
+                      // When detecting finishes, show the final stage briefly then clear UI states so it's not jarring
+                      if (!detecting) {
+                        setIsCapturing(false)
+                        setShowAnimation(false)
+                        // Keep the UI showing the final stage for a short moment so users perceive completion
+                        setTimeout(() => setScanStage(0), 650)
+                      }
+                    }}
                   />
                 )}
               </div>
@@ -207,20 +249,20 @@ export default function Home() {
           <div className="mt-4 text-center text-red-600 font-gothic">{errorMessage}</div>
         )}
 
-        <div className="mt-10 flex justify-center">
+          <div className="mt-6 flex justify-center">
           {!faceDescriptor ? (
-            isCapturing ? (
+            isDetecting || isCapturing ? (
               <button
-                className="px-12 py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic transition-colors cursor-not-allowed"
+                className="px-12 py-3 border-2 border-[#2d2d2d] text-[#8b8b8b] font-gothic transition-colors cursor-not-allowed bg-[#f0efe8]"
                 disabled
               >
-                PROCESSING...
+                {`CAPTURING ${scanStage || 0}/${DETECTOR_DEFAULT_SCANS}...`}
               </button>
-            ) : (
+              ) : (
               <button
                 onClick={handleCaptureClick}
                 className="px-12 py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic hover:bg-[#2d2d2d] hover:text-[#e8e6d9] transition-colors"
-                disabled={isCapturing}
+                disabled={isCapturing || isDetecting}
               >
                 CAPTURE
               </button>
@@ -235,6 +277,32 @@ export default function Home() {
             </button>
           )}
         </div>
+        {/* Help link below capture button */}
+        <div className="mt-1 text-center">
+          <button
+            onClick={() => { if (!isDetecting && !isCapturing) setShowHelp(true) }}
+            className={`text-black font-bold ${(isDetecting || isCapturing) ? 'cursor-not-allowed opacity-50' : ''}`}
+            style={{ fontFamily: 'Times New Roman, Times, serif' }}
+            aria-disabled={isDetecting || isCapturing}
+            disabled={isDetecting || isCapturing}
+          >
+            What's going on?
+          </button>
+        </div>
+
+        {/* Help modal overlay */}
+        {showHelp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-md" onClick={() => setShowHelp(false)} />
+            <div className="relative max-w-3xl mx-4">
+              <button onClick={() => setShowHelp(false)} aria-label="Close" className="absolute right-2 top-2 text-white font-bold text-2xl z-30">×</button>
+              {/* Transparent container so the image displays edge-to-edge */}
+              <div className="relative">
+                <HelpImageFallback />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
   {faceDescriptor && <div className="mt-4 text-xs text-[#2d2d2d] opacity-50">Biometric signature captured</div>}

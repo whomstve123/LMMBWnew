@@ -3,7 +3,9 @@
 
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
-import * as faceapi from "face-api.js"
+
+// Avoid static import of utils/face-api which would pull face-api into SSR build.
+const faceApiModuleRef = { current: null as any }
 
 
 interface FaceDetectorProps {
@@ -21,29 +23,31 @@ export default function FaceDetector({ videoRef, onFaceDetected, isCapturing, on
   const [faceDescriptor, setFaceDescriptor] = useState<string | null>(null)
   const detectionRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Load models on mount
+  // Load models on mount (browser-only helper)
   useEffect(() => {
+    let mounted = true
     async function loadModels() {
       try {
         setIsLoading(true)
         setError(null)
-
-        // Load models directly
-        await faceapi.nets.tinyFaceDetector.load("/")
-        await faceapi.nets.faceRecognitionNet.load("/")
-
-        setIsLoading(false)
-        console.log("Face models loaded successfully")
+        if (!faceApiModuleRef.current) {
+          faceApiModuleRef.current = await import('@/utils/face-api')
+        }
+        await faceApiModuleRef.current.loadFaceApiModels('/models')
+        if (mounted) setIsLoading(false)
       } catch (err) {
-        console.error("Error loading face models:", err)
-        setError("Failed to load face detection models")
-        setIsLoading(false)
+        console.error('Error loading face models:', err)
+        if (mounted) {
+          setError('Failed to load face detection models')
+          setIsLoading(false)
+        }
       }
     }
 
     loadModels()
 
     return () => {
+      mounted = false
       if (detectionRef.current) {
         clearTimeout(detectionRef.current)
       }
@@ -66,85 +70,91 @@ export default function FaceDetector({ videoRef, onFaceDetected, isCapturing, on
 
   // Multi-scan averaging logic
   const runMultiScan = async () => {
-    setIsDetecting(true);
-    setScanStage(1);
-    setError(null);
-    const SCAN_COUNT = 7;
-    let descriptors: Float32Array[] = [];
+    setIsDetecting(true)
+    setScanStage(1)
+    setError(null)
+    const SCAN_COUNT = 5
+    const descriptors: Float32Array[] = []
+
     for (let i = 1; i <= SCAN_COUNT; i++) {
-      setScanStage(i);
+      setScanStage(i)
       try {
-        const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
-        const detection = await faceapi.detectSingleFace(videoRef.current!, options);
-        if (detection) {
-          const descriptor = await faceapi.computeFaceDescriptor(videoRef.current!);
-          if (descriptor) {
-            // Normalize and bin descriptor to match backend logic
-            const arr = Array.prototype.slice.call(descriptor as Float32Array);
-            const mean = arr.reduce((sum, v) => sum + v, 0) / arr.length;
-            const std = Math.sqrt(arr.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / arr.length) || 1;
-            const normalized = arr.map((v) => (v - mean) / std);
-            // Coarse binning: bin to nearest 1.0 and round to integer
-            const binned = new Float32Array(normalized.map((v) => Math.round(v)));
-            descriptors.push(binned);
-            // Debug log each scan descriptor
-            console.log(`[SCAN ${i}/${SCAN_COUNT}] Descriptor (coarse):`, binned);
-          } else {
-            setError("Could not extract face descriptor. Please try again.");
-            setIsDetecting(false);
-            setScanStage(0);
-            return;
-          }
-        } else {
-          setError("No face detected. Please try again.");
-          setIsDetecting(false);
-          setScanStage(0);
-          return;
+        if (!videoRef.current) {
+          setError('Video element not ready')
+          setIsDetecting(false)
+          setScanStage(0)
+          return
         }
+
+        if (!faceApiModuleRef.current) {
+          faceApiModuleRef.current = await import('@/utils/face-api')
+        }
+        const res = await faceApiModuleRef.current.generateFaceDescriptor(videoRef.current)
+
+        if (res === null) {
+          setError('No face detected. Please try again.')
+          setIsDetecting(false)
+          setScanStage(0)
+          return
+        }
+
+        if (typeof res === 'object' && 'error' in res) {
+          setError(res.error)
+          setIsDetecting(false)
+          setScanStage(0)
+          return
+        }
+
+        // It's a Float32Array
+        descriptors.push(res as Float32Array)
       } catch (err) {
-        setError("Error during face detection.");
-        setIsDetecting(false);
-        setScanStage(0);
-        return;
+        console.error('Error during face detection loop:', err)
+        setError('Error during face detection.')
+        setIsDetecting(false)
+        setScanStage(0)
+        return
       }
-      await new Promise(res => setTimeout(res, 500));
+
+      await new Promise((res) => setTimeout(res, 500))
     }
-    // Calculate variance between scans for quality check
-    let totalVariance = 0;
-    for (let i = 0; i < descriptors[0].length; i++) {
-      const values = descriptors.map(d => d[i]);
-      const mean = values.reduce((a, b) => a + b, 0) / values.length;
-      const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
-      totalVariance += variance;
+
+    if (descriptors.length === 0) {
+      setError('No successful scans collected')
+      setIsDetecting(false)
+      setScanStage(0)
+      return
     }
-    const avgVariance = totalVariance / descriptors[0].length;
-    // Debug log variance
-    console.log(`[SCAN] Average variance between scans:`, avgVariance);
-    // Threshold: if variance is too high, reject scan
-    if (avgVariance > 0.05) {
-      setError("Scan quality too low. Please keep your face steady and try again.");
-      setIsDetecting(false);
-      setScanStage(0);
-      return;
+
+    // Compute per-dimension median to build a stable descriptor
+    const dim = descriptors[0].length
+    const perDim: number[][] = Array.from({ length: dim }, () => [])
+    descriptors.forEach((d) => {
+      for (let k = 0; k < dim; k++) perDim[k].push(d[k])
+    })
+
+    const median = new Float32Array(dim)
+    for (let k = 0; k < dim; k++) {
+      const arr = perDim[k].slice().sort((a, b) => a - b)
+      const m = arr.length
+      median[k] = m % 2 === 1 ? arr[(m - 1) / 2] : (arr[m / 2 - 1] + arr[m / 2]) / 2
     }
-    // Average descriptors
-    const avg = new Float32Array(descriptors[0].length);
-    for (let i = 0; i < avg.length; i++) {
-      avg[i] = descriptors.map(d => d[i]).reduce((a, b) => a + b, 0) / descriptors.length;
+
+    // Use shared helper to normalize & quantize
+    try {
+      if (!faceApiModuleRef.current) {
+        faceApiModuleRef.current = await import('@/utils/face-api')
+      }
+      const quantized = faceApiModuleRef.current.normalizeAndQuantize(median, 1000)
+      const jsonString = JSON.stringify(quantized)
+      sessionStorage.setItem('faceDescriptor', jsonString)
+      setFaceDescriptor(jsonString)
+      if (typeof onFaceDetected === 'function') onFaceDetected(jsonString)
+    } catch (err) {
+      console.error('Failed to normalize descriptor:', err)
+      setError('Failed to compute stable descriptor')
     }
-    // Normalize and round descriptor for determinism
-  const mean = avg.reduce((sum, v) => sum + v, 0) / avg.length;
-  const std = Math.sqrt(avg.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / avg.length) || 1;
-  const normalized = avg.map((v) => (v - mean) / std);
-  // Ensure integer conversion: Math.round returns a number, but we want explicit integer type
-  const rounded = normalized.map((v) => Number(Math.round(v)));
-  const finalDescriptor = new Int32Array(rounded);
-  const jsonString = JSON.stringify(Array.from(finalDescriptor));
-  sessionStorage.setItem("faceDescriptor", jsonString);
-  setFaceDescriptor(jsonString);
-  if (typeof onFaceDetected === "function") onFaceDetected(jsonString);
-  setIsDetecting(false);
-  setScanStage(0);
+    setIsDetecting(false)
+    setScanStage(0)
   }
 
 

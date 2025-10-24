@@ -12,7 +12,7 @@ export default function YourSoundPage() {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   useEffect(() => {
     if (isMobile) {
-      console.log('MOBILE DETECTED: CustomAudioPlayer/overlay bug reproduction context')
+  // Mobile detection debug log removed
     }
   }, [isMobile])
   const [faceHash, setFaceHash] = useState<string | null>(null)
@@ -32,7 +32,7 @@ export default function YourSoundPage() {
     // Get face descriptor from sessionStorage
     const storedDescriptor = sessionStorage.getItem("faceDescriptor")
     if (!storedDescriptor) {
-      console.log("No face descriptor found in session storage, redirecting to home")
+  // No face descriptor found - redirecting to home (debug log removed)
       router.push("/")
       return
     }
@@ -59,7 +59,7 @@ export default function YourSoundPage() {
     if (isRequesting) return;
     setIsRequesting(true);
     try {
-      console.log("Generating track with descriptor:", descriptor.slice(0, 5).join(",") + "...")
+  // Generating track (debug log removed)
       setIsLoading(true)
       setError(null)
 
@@ -77,7 +77,7 @@ export default function YourSoundPage() {
       }
 
       const data = await response.json()
-      console.log("Track generated successfully:", data)
+  // Track generated successfully (debug log removed)
 
       setTrackId(data.trackId)
       setAudioUrl(data.audioUrl)

@@ -3,7 +3,11 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { loadFaceApiModels, generateFaceDescriptor, descriptorToBase64 } from "@/utils/face-api"
+
+// Avoid statically importing the heavy `utils/face-api` at module-level so Next's
+// server build doesn't accidentally include face-api/tfjs. We'll dynamically
+// import it at runtime in the browser inside effects and call its helpers.
+const faceApiModuleRef = { current: null as any }
 
 interface UseFaceDetectionProps {
   enabled: boolean
@@ -34,19 +38,26 @@ export function useFaceDetection({ enabled, videoRef, onFaceDetected }: UseFaceD
     let isMounted = true
 
     if (typeof window !== "undefined") {
-      loadFaceApiModels()
-        .then(() => {
+      ;(async () => {
+        try {
+          // Dynamic import to keep face-api out of SSR bundle
+          if (!faceApiModuleRef.current) {
+            faceApiModuleRef.current = await import('@/utils/face-api')
+          }
+          await faceApiModuleRef.current.loadFaceApiModels()
           if (isMounted) {
             setModelsLoaded(true)
             setError(null)
           }
-        })
-        .catch((err) => {
+        } catch (err: any) {
           if (isMounted) {
-            setError(`Failed to load facial recognition models: ${err.message}`)
+            setError(`Failed to load facial recognition models: ${err?.message ?? String(err)}`)
+            // keep the original error logged for debugging
+            // eslint-disable-next-line no-console
             console.error(err)
           }
-        })
+        }
+      })()
     }
 
     return () => {
@@ -95,7 +106,12 @@ export function useFaceDetection({ enabled, videoRef, onFaceDetected }: UseFaceD
       }
 
       try {
-        const descriptor = await generateFaceDescriptor(videoRef.current);
+        if (!faceApiModuleRef.current) {
+          faceApiModuleRef.current = await import('@/utils/face-api')
+          // ensure models are loaded
+          await faceApiModuleRef.current.loadFaceApiModels()
+        }
+        const descriptor = await faceApiModuleRef.current.generateFaceDescriptor(videoRef.current)
         if (descriptor && !(typeof descriptor === "object" && "error" in descriptor)) {
           descriptors.push(descriptor);
           scanCount++;
@@ -107,28 +123,36 @@ export function useFaceDetection({ enabled, videoRef, onFaceDetected }: UseFaceD
 
         if (scanCount >= maxScans) {
           // Average descriptors
-          const avg = new Float32Array(descriptors[0].length);
-          for (let i = 0; i < avg.length; i++) {
-            avg[i] = descriptors.map(d => d[i]).reduce((a, b) => a + b, 0) / descriptors.length;
+          const dim = descriptors[0].length
+          const avg = new Float32Array(dim)
+          for (let i = 0; i < dim; i++) {
+            avg[i] = descriptors.map(d => d[i]).reduce((a, b) => a + b, 0) / descriptors.length
           }
-          // Normalize and round to integers
-          const mean = avg.reduce((sum, v) => sum + v, 0) / avg.length;
-          const std = Math.sqrt(avg.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / avg.length) || 1;
-          const normalized = avg.map((v) => (v - mean) / std);
-          const rounded = normalized.map((v) => Number(Math.round(v)));
-          const finalDescriptor = new Float32Array(rounded);
-          sessionStorage.setItem("faceDescriptor", JSON.stringify(Array.from(finalDescriptor)));
-          setFaceDetected(true);
-          if (onFaceDetected) {
-            onFaceDetected("descriptor"); // For compatibility
+
+          // Use the normalizeAndQuantize helper from utils/face-api
+          try {
+            if (!faceApiModuleRef.current) {
+              faceApiModuleRef.current = await import('@/utils/face-api')
+            }
+            const quantized = faceApiModuleRef.current.normalizeAndQuantize(avg, 1000)
+            const jsonString = JSON.stringify(quantized)
+            sessionStorage.setItem("faceDescriptor", jsonString)
+            setFaceDetected(true)
+            if (onFaceDetected) {
+              onFaceDetected(jsonString)
+            }
+          } catch (err) {
+            console.error('Error normalizing descriptor:', err)
+            setError('Failed to process face descriptor')
           }
+
           // Stop detection after successful averaging
           if (detectionInterval.current) {
-            clearInterval(detectionInterval.current);
-            setIsDetecting(false);
+            clearInterval(detectionInterval.current)
+            setIsDetecting(false)
           }
           if (timeoutId) {
-            clearTimeout(timeoutId);
+            clearTimeout(timeoutId)
           }
         }
       } catch (err) {

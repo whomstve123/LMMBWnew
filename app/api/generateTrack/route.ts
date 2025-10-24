@@ -43,20 +43,61 @@ export async function POST(request: Request) {
     // Debug log incoming descriptor
     console.log('[generateTrack] Incoming descriptor:', intDescriptor);
     let matchedMapping = null;
-  const SIMILARITY_THRESHOLD = 0.90; // Even more tolerant matching
+  const SIMILARITY_THRESHOLD = 0.90; // strict match threshold
+  const ADAPTIVE_THRESHOLD = 0.82; // if best similarity is here or above, accept and adapt stored descriptor
+    let bestSimilarity = -1
+    let bestMapping: any = null
     for (const mapping of allMappings || []) {
-      if (mapping.face_descriptor && Array.isArray(mapping.face_descriptor) && mapping.face_descriptor.length === intDescriptor.length) {
-        // Ensure stored descriptor is strictly integers
-        const storedIntDescriptor = mapping.face_descriptor.map((v) => Number(Math.round(v)));
-        const similarity = cosineSimilarity(intDescriptor, storedIntDescriptor);
-        // Debug log similarity score for each mapping
-        console.log(`[generateTrack] Comparing to mapping id=${mapping.id}, similarity=${similarity}`);
-        if (similarity >= SIMILARITY_THRESHOLD) {
-          matchedMapping = mapping;
-          break;
+      if (!mapping.face_descriptor) continue
+
+      // Stored face_descriptor may be stored as JSON or an array; coerce to number[]
+      let stored: number[] | null = null
+      try {
+        if (Array.isArray(mapping.face_descriptor)) {
+          stored = mapping.face_descriptor.map((v: any) => Number(v))
+        } else if (typeof mapping.face_descriptor === 'string') {
+          stored = JSON.parse(mapping.face_descriptor).map((v: any) => Number(v))
         }
+      } catch (e) {
+        // Skip malformed entries
+        console.warn('[generateTrack] Skipping malformed stored descriptor for mapping id=', mapping.id)
+        continue
+      }
+
+      if (!stored || stored.length !== intDescriptor.length) continue
+
+      const similarity = cosineSimilarity(intDescriptor, stored)
+      console.log(`[generateTrack] Comparing to mapping id=${mapping.id}, similarity=${similarity}`)
+      if (similarity > bestSimilarity) {
+        bestSimilarity = similarity
+        bestMapping = mapping
+      }
+      if (similarity >= SIMILARITY_THRESHOLD) {
+        matchedMapping = mapping
+        break
       }
     }
+    // If we didn't hit the strict threshold but the best match is close, adaptively accept it and merge descriptors
+    if (!matchedMapping && bestMapping && bestSimilarity >= ADAPTIVE_THRESHOLD) {
+      console.info('[generateTrack] Adaptive accept mapping id=', bestMapping.id, 'similarity=', bestSimilarity)
+      matchedMapping = bestMapping
+      // merge descriptors: compute weighted average of stored and incoming descriptor to stabilize over time
+      try {
+        // parse stored descriptor similarly to above
+        let storedArr: number[] = []
+        if (Array.isArray(bestMapping.face_descriptor)) storedArr = bestMapping.face_descriptor.map((v: any) => Number(v))
+        else storedArr = JSON.parse(bestMapping.face_descriptor).map((v: any) => Number(v))
+        if (storedArr.length === intDescriptor.length) {
+          const existingCount = Number(bestMapping.generated_count || 1)
+          const newArr = storedArr.map((s, idx) => Math.round((s * existingCount + intDescriptor[idx]) / (existingCount + 1)))
+          // update DB stored descriptor to the new averaged descriptor
+          await supabase.from('face_track_mappings').update({ face_descriptor: newArr }).eq('id', bestMapping.id)
+        }
+      } catch (e) {
+        console.warn('[generateTrack] Failed to adapt stored descriptor for mapping id=', bestMapping.id, e)
+      }
+    }
+
     if (matchedMapping) {
       // Update generated_count and last_accessed
       await supabase
@@ -66,7 +107,7 @@ export async function POST(request: Request) {
           last_accessed: new Date().toISOString(),
         })
         .eq('id', matchedMapping.id);
-      const selectedStems = selectStemsFromHash(matchedMapping.track_id);
+  const selectedStems = selectStemsFromHash(matchedMapping.track_id);
       return NextResponse.json({
         success: true,
         stems: selectedStems,

@@ -6,6 +6,7 @@ export default function WebcamFeed() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading")
   const [errorMessage, setErrorMessage] = useState<string>("")
+  const streamRef = useRef<MediaStream | null>(null)
 
   useEffect(() => {
     // Simple flag to track component mount state
@@ -23,6 +24,8 @@ export default function WebcamFeed() {
         // Only proceed if component is still mounted
         if (isMounted && videoRef.current) {
           videoRef.current.srcObject = stream
+          // store stream for reliable cleanup
+          streamRef.current = stream
 
           // Set status to ready when video can play
           videoRef.current.onloadeddata = () => {
@@ -46,10 +49,16 @@ export default function WebcamFeed() {
     // Cleanup function
     return () => {
       isMounted = false
-      // Stop any active tracks
+      // prefer stored ref
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop())
+        streamRef.current = null
+      }
+      // Stop any active tracks attached to video element
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream
         stream.getTracks().forEach((track) => track.stop())
+        videoRef.current.srcObject = null
       }
     }
   }, [])

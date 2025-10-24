@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:determinism": "node ./scripts/test-hash-audio-determinism.js",
+    "test:submit": "node ./scripts/test-submit-flow.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

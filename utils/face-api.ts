@@ -1,111 +1,91 @@
 "use client"
 
-import * as faceapi from "face-api.js"
-
-// Flag to track if models are loaded
+// Avoid statically importing `face-api.js` here — dynamic import in browser-only flows prevents
+// the bundler from pulling in node-only modules like `fs` and `encoding`.
+let faceapi: any = null
 let modelsLoaded = false
 
-// Load models directly from memory instead of from URLs
-export async function loadFaceApiModels() {
-  if (modelsLoaded) return
-
+async function ensureFaceApiImported() {
+  if (faceapi) return faceapi
   try {
-    console.log("Attempting to load face-api.js models...")
+    const pkg = 'face-api.js'
+    // import via variable to avoid bundlers statically resolving this on the server
+    faceapi = await import(pkg)
+    return faceapi
+  } catch (err) {
+    console.error('Failed to import face-api.js dynamically:', err)
+    throw err
+  }
+}
 
-    // Use a simpler model that's more reliable
-    await faceapi.nets.tinyFaceDetector.load("/")
-
-    // Only load what we absolutely need
-    await faceapi.nets.faceRecognitionNet.load("/")
-
+// Load models if needed. `modelBaseUrl` should point to `/models` in production.
+export async function loadFaceApiModels(modelBaseUrl = "/models") {
+  if (modelsLoaded) return true
+  const api = await ensureFaceApiImported()
+  try {
+    await api.nets.tinyFaceDetector.load(modelBaseUrl)
+    await api.nets.faceRecognitionNet.load(modelBaseUrl)
     modelsLoaded = true
-    console.log("Face-API models loaded successfully")
     return true
   } catch (error) {
-    console.error("Error loading Face-API models:", error)
-
-    // More helpful error message
+    console.error('Error loading Face-API models:', error)
     const errorMessage = error instanceof Error ? error.message : String(error)
     throw new Error(`Failed to load face models: ${errorMessage}. Try refreshing the page.`)
   }
 }
 
 // Detect face and generate descriptor
-// Returns face descriptor, or { error } if scan quality is poor, or null if no face detected
 export async function generateFaceDescriptor(videoElement: HTMLVideoElement): Promise<Float32Array | { error: string } | null> {
+  const api = await ensureFaceApiImported()
   if (!modelsLoaded) {
     await loadFaceApiModels()
   }
 
   try {
-    // Use only TinyFaceDetector for better performance and reliability
-    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+    const options = new api.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+    const detection = await api.detectSingleFace(videoElement, options)
+    if (!detection) return null
 
-    // Detect face
-    const detection = await faceapi.detectSingleFace(videoElement, options)
-
-    if (!detection) {
-      console.log("No face detected")
-      return null
-    }
-
-    // Quality check: reject poor scans (low score, small box, etc.)
-  const minScore = 0.60; // Maximally tolerant threshold for maximum flexibility
+    const minScore = 0.6
     if (detection.score < minScore) {
-      const errorMsg = `Face detected but score too low (${detection.score}). Scan rejected. Try better lighting, a closer face, and a neutral expression.`;
-      console.log(errorMsg);
-      return { error: errorMsg };
+      return { error: `Face detected but score too low (${detection.score}). Scan rejected.` }
     }
-    const box = detection.box;
+    const box = detection.box
     if (box.width < 100 || box.height < 100) {
-      const errorMsg = `Face detected but bounding box too small (${box.width}x${box.height}). Scan rejected. Try getting closer to the camera.`;
-      console.log(errorMsg);
-      return { error: errorMsg };
+      return { error: `Face detected but bounding box too small (${box.width}x${box.height}).` }
     }
 
-    // Get face descriptor
-    const descriptor = await faceapi.computeFaceDescriptor(videoElement)
+  // Compute descriptor
+  const descriptor = await api.computeFaceDescriptor(videoElement)
+    if (!descriptor) return null
 
-    if (!descriptor) {
-      console.log("Could not compute face descriptor")
-      return null
-    }
-
-  // Coarse binning: normalize and round to nearest integer for maximum repeatability
-  const arr = Array.prototype.slice.call(descriptor as Float32Array);
-  const mean = arr.reduce((sum, v) => sum + v, 0) / arr.length;
-  const std = Math.sqrt(arr.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / arr.length) || 1;
-  const normalized = arr.map((v) => (v - mean) / std);
-  // Ensure integer conversion: Math.round returns a number, but keep as Float32Array for type compatibility
-  const rounded = normalized.map((v) => Number(Math.round(v)));
-  const binnedDescriptor = new Float32Array(rounded);
-  return binnedDescriptor;
+    // Return raw descriptor (normalization/quantization helpers are provided separately)
+    return descriptor as Float32Array
   } catch (error) {
-    console.error("Error generating face descriptor:", error)
+    console.error('Error generating face descriptor:', error)
     return null
   }
 }
 
-// Convert descriptor to base64 string
 export function descriptorToBase64(descriptor: Float32Array): string {
-  // Convert Float32Array to regular array
   const array = Array.from(descriptor)
-
-  // Convert to JSON string
   const jsonString = JSON.stringify(array)
-
-  // Convert to base64
   return btoa(jsonString)
 }
 
-// Convert base64 string back to descriptor
 export function base64ToDescriptor(base64String: string): Float32Array {
-  // Decode base64 to JSON string
   const jsonString = atob(base64String)
-
-  // Parse JSON string to array
   const array = JSON.parse(jsonString)
-
-  // Convert to Float32Array
   return new Float32Array(array)
+}
+
+// New helper: normalize (L2) and quantize descriptor to integers for deterministic hashing
+export function normalizeAndQuantize(descriptor: Float32Array | number[], multiplier = 1000): number[] {
+  const arr = Array.from(descriptor as any as number[])
+  // L2-normalize
+  const l2 = Math.sqrt(arr.reduce((s, v) => s + v * v, 0)) || 1
+  const normalized = arr.map(v => v / l2)
+  // Quantize
+  const quantized = normalized.map(v => Math.round(v * multiplier))
+  return quantized
 }

@@ -11,12 +11,37 @@ export async function POST(request: Request) {
 
     console.log(`Submission received: ${email}`)
 
-    // Step 1: Generate the track using the existing generateTrack API
-    const generateTrackResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/generateTrack`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ descriptor })
-    });
+      // Step 1: Generate the track using the existing generateTrack API
+      // Resolve the base from the incoming request URL but be tolerant of dev proxies that
+      // may present an https origin while the internal dev server is speaking plain http.
+      const reqUrl = new URL(request.url)
+      // If this is a local/private host (dev), prefer http to avoid TLS/proxy handshake issues.
+      const isLocalHost = ["localhost", "127.0.0.1"].includes(reqUrl.hostname) || reqUrl.hostname.startsWith('10.') || reqUrl.hostname.startsWith('192.168.') || reqUrl.hostname === '::1'
+      if (isLocalHost) reqUrl.protocol = 'http:'
+      const generateTrackUrl = new URL('/api/generateTrack', reqUrl).toString()
+
+      let generateTrackResponse: Response
+      try {
+        generateTrackResponse = await fetch(generateTrackUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ descriptor })
+        })
+      } catch (err) {
+        // If we failed and we tried https, retry with http for local hosts (common in dev/proxy setups)
+        console.warn('Initial generateTrack fetch failed, attempting http fallback', err)
+        if (reqUrl.protocol === 'https:' && isLocalHost) {
+          reqUrl.protocol = 'http:'
+          const fallbackUrl = new URL('/api/generateTrack', reqUrl).toString()
+          generateTrackResponse = await fetch(fallbackUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ descriptor })
+          })
+        } else {
+          throw err
+        }
+      }
 
     if (!generateTrackResponse.ok) {
       const errorData = await generateTrackResponse.json();
@@ -33,16 +58,38 @@ export async function POST(request: Request) {
     }
 
     // Step 2: Send the email with the track download link
-    const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/sendEmail`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        email, 
-        trackId, 
-        audioUrl, 
-        testMode: false 
+    const emailUrl = new URL('/api/sendEmail', reqUrl).toString()
+    let emailResponse: Response
+    try {
+      emailResponse = await fetch(emailUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email, 
+          trackId, 
+          audioUrl, 
+          testMode: false 
+        })
       })
-    });
+    } catch (err) {
+      console.warn('Initial sendEmail fetch failed, attempting http fallback', err)
+      if (reqUrl.protocol === 'https:' && isLocalHost) {
+        reqUrl.protocol = 'http:'
+        const fallbackEmailUrl = new URL('/api/sendEmail', reqUrl).toString()
+        emailResponse = await fetch(fallbackEmailUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            email, 
+            trackId, 
+            audioUrl, 
+            testMode: false 
+          })
+        })
+      } else {
+        throw err
+      }
+    }
 
     if (!emailResponse.ok) {
       const emailError = await emailResponse.json();

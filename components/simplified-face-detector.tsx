@@ -84,9 +84,16 @@ export default function SimplifiedFaceDetector({
     }
     // Average descriptors
     const avg = descriptors[0].map((_, idx) => descriptors.map(d => d[idx]).reduce((a, b) => a + b, 0) / descriptors.length)
-    const jsonString = JSON.stringify(avg)
-    sessionStorage.setItem("faceDescriptor", jsonString)
-    onFaceDetected(jsonString)
+    try {
+      const utils = await import('@/utils/face-api')
+      const quantized = utils.normalizeAndQuantize(avg, 1000)
+      const jsonString = JSON.stringify(quantized)
+      sessionStorage.setItem("faceDescriptor", jsonString)
+      onFaceDetected(jsonString)
+    } catch (err) {
+      console.error('Failed to normalize simplified descriptor:', err)
+      onNoFaceDetected()
+    }
     setIsDetecting(false)
     setScanStage(0)
   }
@@ -218,10 +225,12 @@ export default function SimplifiedFaceDetector({
         // Generate a hash from the image
         const hash = generateImageHash(canvas)
 
-        // Save to sessionStorage
-        sessionStorage.setItem("faceHash", hash)
-
-        // Call callback
+        // Keep a lightweight debug-only faceHash but prefer the `faceDescriptor` format
+        try {
+          // Don't overwrite the canonical `faceDescriptor` used by the rest of the app
+          sessionStorage.setItem("faceHash", hash)
+        } catch (e) {}
+        // The caller expects a JSON descriptor string; simplified detector uses the hash only for legacy callbacks
         onFaceDetected(hash)
         setIsDetecting(false)
       } else {
