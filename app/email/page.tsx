@@ -64,7 +64,7 @@ export default function EmailPage() {
     <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-16 md:py-16 py-4">
       <div className="w-full max-w-6xl mx-auto relative">
         {/* Title */}
-        <div className="text-center mb-8 md:mb-8 mb-3">d:mb-8 mb-3">
+        <div className="text-center mb-8 md:mb-8 mb-3">
           <h1 className="text-3xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
             JILL BLUTT&apos;S REVOLUTIONARY
           </h1>
@@ -74,7 +74,7 @@ export default function EmailPage() {
         {/* Center form - without side text */}
         <div className="flex justify-center items-center">
           <div className="w-64 md:w-80 relative">
-            <form onSubmit={handleSubmit} className="bg-transparent p-3 md:p-6 rounded-lg">ed-lg">
+            <form onSubmit={handleSubmit} className="bg-transparent p-3 md:p-6 rounded-lg">
               <div className="mb-3 md:mb-6">
                 <label htmlFor="email" className="block text-[#2d2d2d] text-lg md:text-xl font-gothic mb-2">
                   ENTER YOUR EMAIL
