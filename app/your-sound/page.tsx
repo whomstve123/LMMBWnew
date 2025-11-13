@@ -123,6 +123,8 @@ export default function YourSoundPage() {
     setTimeout(() => {
       setShowProgressiveAnimation(false)
     }, 17000) // 17 seconds delay (7+10)
+  }
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -131,7 +133,6 @@ export default function YourSoundPage() {
       }
     }
   }, [])
-  }
 
   const handleAnimationComplete = () => {
     // Called when the progress reaches 100% and animation is done

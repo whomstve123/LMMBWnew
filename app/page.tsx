@@ -147,7 +147,7 @@ export default function Home() {
         />
       )}
       <div className="w-full max-w-6xl mx-auto relative">
-        <div className="text-center mb-8 md:mb-8 mb-3">d:mb-8 mb-3">
+        <div className="text-center mb-8 md:mb-8 mb-3">
           <h1 className="text-3xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
             JILL BLUTT&apos;S REVOLUTIONARY
           </h1>
