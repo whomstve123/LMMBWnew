@@ -61,10 +61,10 @@ export default function EmailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-16 md:py-16 py-4">
+    <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-4 md:py-16">
       <div className="w-full max-w-6xl mx-auto relative">
         {/* Title */}
-        <div className="text-center mb-8 md:mb-8 mb-3">
+        <div className="text-center mb-3 md:mb-8">
           <h1 className="text-3xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
             JILL BLUTT&apos;S REVOLUTIONARY
           </h1>
