@@ -136,7 +136,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-16">
+    <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-16 md:py-16 py-4">
       {/* Full-page blocking overlay while detection is running to prevent any clicks/focus changes */}
       {isDetecting && (
         <div
@@ -147,11 +147,11 @@ export default function Home() {
         />
       )}
       <div className="w-full max-w-6xl mx-auto relative">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
+        <div className="text-center mb-8 md:mb-8 mb-3">d:mb-8 mb-3">
+          <h1 className="text-3xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
             JILL BLUTT&apos;S REVOLUTIONARY
           </h1>
-          <div className="text-5xl md:text-6xl font-legend mt-2 text-[#2d2d2d]">Mind Un-Wanderer</div>
+          <div className="text-3xl md:text-6xl font-legend mt-1 md:mt-2 text-[#2d2d2d]">Mind Un-Wanderer</div>
         </div>
 
         <div className="relative flex justify-center items-center">
@@ -169,7 +169,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="w-64 h-80 md:w-80 md:h-96 relative">
+          <div className="w-56 h-64 md:w-80 md:h-96 relative">
             <div className="absolute inset-0 w-full h-full animate-slow-spin">
               <svg viewBox="0 0 100 120" className="w-full h-full">
                 <defs>
@@ -189,7 +189,7 @@ export default function Home() {
             </div>
 
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-44 h-64 md:w-52 md:h-72 rounded-full overflow-hidden border-4 border-[#2d2d2d] relative">
+              <div className="w-36 h-52 md:w-52 md:h-72 rounded-full overflow-hidden border-4 border-[#2d2d2d] relative">
                 <SimpleWebcam
                   ref={webcamRef}
                   videoRef={videoRef}
@@ -249,11 +249,11 @@ export default function Home() {
           <div className="mt-4 text-center text-red-600 font-gothic">{errorMessage}</div>
         )}
 
-          <div className="mt-6 flex justify-center">
+          <div className="mt-3 md:mt-6 flex justify-center">
           {!faceDescriptor ? (
             isDetecting || isCapturing ? (
               <button
-                className="px-12 py-3 border-2 border-[#2d2d2d] text-[#8b8b8b] font-gothic transition-colors cursor-not-allowed bg-[#f0efe8]"
+                className="px-8 md:px-12 py-2 md:py-3 border-2 border-[#2d2d2d] text-[#8b8b8b] font-gothic transition-colors cursor-not-allowed bg-[#f0efe8]"
                 disabled
               >
                 {`CAPTURING ${scanStage || 0}/${DETECTOR_DEFAULT_SCANS}...`}
@@ -261,7 +261,7 @@ export default function Home() {
               ) : (
               <button
                 onClick={handleCaptureClick}
-                className="px-12 py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic hover:bg-[#2d2d2d] hover:text-[#e8e6d9] transition-colors"
+                className="px-8 md:px-12 py-2 md:py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic hover:bg-[#2d2d2d] hover:text-[#e8e6d9] transition-colors"
                 disabled={isCapturing || isDetecting}
               >
                 CAPTURE
@@ -270,7 +270,7 @@ export default function Home() {
           ) : (
             <button
               onClick={handleProceed}
-              className="px-12 py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic hover:bg-[#2d2d2d] hover:text-[#e8e6d9] transition-colors"
+              className="px-8 md:px-12 py-2 md:py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic hover:bg-[#2d2d2d] hover:text-[#e8e6d9] transition-colors"
               disabled={isGenerating}
             >
               {isGenerating ? "CREATING..." : "PROCEED"}

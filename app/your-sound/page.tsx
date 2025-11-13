@@ -146,26 +146,26 @@ export default function YourSoundPage() {
         isVisible={showProgressiveAnimation}
         onComplete={handleAnimationComplete}
       />
-      <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-16">
+      <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-16 md:py-16 py-4">
       <div className="w-full max-w-6xl mx-auto relative">
         {/* Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-5xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
+        <div className="text-center mb-8 md:mb-8 mb-3">d:mb-8 mb-3">
+          <h1 className="text-3xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
             JILL BLUTT&apos;S REVOLUTIONARY
           </h1>
-          <div className="text-5xl md:text-6xl font-legend mt-2 text-[#2d2d2d]">Mind Un-Wanderer</div>
+          <div className="text-3xl md:text-6xl font-legend mt-1 md:mt-2 text-[#2d2d2d]">Mind Un-Wanderer</div>
         </div>
 
         {/* Center audio player - without side text */}
         <div className="flex justify-center items-center">
           <div className="w-64 md:w-80 relative">
-            <div className="bg-transparent p-6 rounded-lg text-center">
-              <h2 className="text-3xl font-gothic text-[#2d2d2d] mb-6">THIS SOUND WAS MADE FOR YOU</h2>
+            <div className="bg-transparent p-3 md:p-6 rounded-lg text-center">
+              <h2 className="text-2xl md:text-3xl font-gothic text-[#2d2d2d] mb-3 md:mb-6">THIS SOUND WAS MADE FOR YOU</h2>
 
               {(isLoading || showProgressiveAnimation) ? (
                 <div className="py-8 text-[#2d2d2d] font-gothic">INITIALIZING YOUR UNIQUE SOUND...</div>
               ) : (
-                <div className="space-y-6">
+                <div className="space-y-3 md:space-y-6">
                   {/* Removed error message before audio player loads */}
                   {audioUrl && (
                     <CustomAudioPlayer

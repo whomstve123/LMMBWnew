@@ -61,22 +61,22 @@ export default function EmailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-16">
+    <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-16 md:py-16 py-4">
       <div className="w-full max-w-6xl mx-auto relative">
         {/* Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-5xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
+        <div className="text-center mb-8 md:mb-8 mb-3">d:mb-8 mb-3">
+          <h1 className="text-3xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
             JILL BLUTT&apos;S REVOLUTIONARY
           </h1>
-          <div className="text-5xl md:text-6xl font-legend mt-2 text-[#2d2d2d]">Mind Un-Wanderer</div>
+          <div className="text-3xl md:text-6xl font-legend mt-1 md:mt-2 text-[#2d2d2d]">Mind Un-Wanderer</div>
         </div>
 
         {/* Center form - without side text */}
         <div className="flex justify-center items-center">
           <div className="w-64 md:w-80 relative">
-            <form onSubmit={handleSubmit} className="bg-transparent p-6 rounded-lg">
-              <div className="mb-6">
-                <label htmlFor="email" className="block text-[#2d2d2d] text-xl font-gothic mb-2">
+            <form onSubmit={handleSubmit} className="bg-transparent p-3 md:p-6 rounded-lg">ed-lg">
+              <div className="mb-3 md:mb-6">
+                <label htmlFor="email" className="block text-[#2d2d2d] text-lg md:text-xl font-gothic mb-2">
                   ENTER YOUR EMAIL
                 </label>
                 <input
@@ -84,7 +84,7 @@ export default function EmailPage() {
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-3 border-2 border-[#2d2d2d] bg-transparent text-[#2d2d2d] focus:outline-none"
+                  className="w-full p-2 md:p-3 border-2 border-[#2d2d2d] bg-transparent text-[#2d2d2d] focus:outline-none"
                   placeholder="your@email.com"
                   required
                 />
@@ -94,7 +94,7 @@ export default function EmailPage() {
               <button
                 type="submit"
                 disabled={isSubmitting || !faceDescriptor}
-                className={`w-full px-6 py-3 border-2 border-[#2d2d2d] font-gothic text-xl
+                className={`w-full px-4 md:px-6 py-2 md:py-3 border-2 border-[#2d2d2d] font-gothic text-lg md:text-xl
                   ${
                     isSubmitting || !faceDescriptor
                       ? "text-gray-400 border-gray-400 cursor-not-allowed"
