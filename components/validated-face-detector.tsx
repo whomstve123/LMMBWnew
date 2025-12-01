@@ -61,10 +61,10 @@ export default function ValidatedFaceDetector({
 
         // Check if models exist by fetching the manifest
         try {
-          const manifestResponse = await fetch(`${MODEL_URL}/tiny_face_detector_model-weights_manifest.json`)
+          const manifestResponse = await fetch(`${MODEL_URL}/ssd_mobilenetv1_model-weights_manifest.json`)
           if (!manifestResponse.ok) {
             // try remote path before falling back
-            const remoteManifest = await fetch(`${REMOTE_MODEL_URL}/tiny_face_detector_model-weights_manifest.json`)
+            const remoteManifest = await fetch(`${REMOTE_MODEL_URL}/ssd_mobilenetv1_model-weights_manifest.json`)
             if (!remoteManifest.ok) {
               console.warn("Model manifest not found locally or remotely, using fallback detection")
               setUseFallback(true)
@@ -79,7 +79,7 @@ export default function ValidatedFaceDetector({
         } catch (e) {
           console.warn("Error checking local model manifest, trying remote URL:", e)
           try {
-            const remoteManifest = await fetch(`${REMOTE_MODEL_URL}/tiny_face_detector_model-weights_manifest.json`)
+            const remoteManifest = await fetch(`${REMOTE_MODEL_URL}/ssd_mobilenetv1_model-weights_manifest.json`)
             if (remoteManifest.ok) {
               modelUrlRef.current = REMOTE_MODEL_URL
             } else {
@@ -112,7 +112,8 @@ export default function ValidatedFaceDetector({
 
         const loadFrom = modelUrlRef.current || MODEL_URL
         try {
-          await faceapiRef.current.nets.tinyFaceDetector.load(loadFrom)
+          // Load SSD MobilenetV1 instead of TinyFaceDetector for better accuracy
+          await faceapiRef.current.nets.ssdMobilenetv1.load(loadFrom)
           await faceapiRef.current.nets.faceLandmark68Net.load(loadFrom)
           await faceapiRef.current.nets.faceRecognitionNet.load(loadFrom)
         } catch (e) {
@@ -243,15 +244,16 @@ export default function ValidatedFaceDetector({
         setScanStage(i)
         notify(i, true)
         try {
-          const options = new (faceapiRef.current.TinyFaceDetectorOptions)({ inputSize: 224, scoreThreshold: 0.5 })
+          // Use SSD MobilenetV1 options for better accuracy
+          const options = new (faceapiRef.current.SsdMobilenetv1Options)({ minConfidence: 0.5 })
           // Run a single unified detection call that yields landmarks + descriptor
           const detectPromise = faceapiRef.current
             .detectSingleFace(videoRef.current, options)
             .withFaceLandmarks()
             .withFaceDescriptor()
 
-          // Per-scan timeout to avoid long hangs (1200ms)
-          const timeoutMs = 1200
+          // Per-scan timeout - SSD is slower, give it more time (1800ms)
+          const timeoutMs = 1800
           const race = await Promise.race([
             detectPromise,
             new Promise(resolve => setTimeout(() => resolve(null), timeoutMs)),

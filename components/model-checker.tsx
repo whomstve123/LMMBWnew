@@ -10,7 +10,7 @@ export default function ModelChecker() {
     async function checkModels() {
       setChecking(true)
       const modelFiles = [
-        "/models/tiny_face_detector_model-weights_manifest.json",
+        "/models/ssd_mobilenetv1_model-weights_manifest.json",
         "/models/face_landmark_68_model-weights_manifest.json",
         "/models/face_recognition_model-weights_manifest.json",
       ]

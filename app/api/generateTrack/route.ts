@@ -44,13 +44,12 @@ export async function POST(request: Request) {
     // Debug log incoming descriptor
     console.log('[generateTrack] Incoming descriptor:', intDescriptor);
     let matchedMapping = null;
-  // Using Euclidean distance on quantized descriptors
+  // Using Euclidean distance on quantized descriptors with SSD MobilenetV1
   // Based on actual measurements:
   // Same person, same session: 0.0000
-  // Same person, different session: 80.0937
-  // Different person (sister): 90.7965, 93.0860
-  // Setting threshold at 85 - will match same person across sessions but not different people
-  const DISTANCE_THRESHOLD = 85;
+  // Same person, different times: 77.5177, 98.1835
+  // Setting threshold at 100 to match same person across sessions
+  const DISTANCE_THRESHOLD = 100;
     let bestDistance = Infinity
     let bestMapping: any = null
     for (const mapping of allMappings || []) {

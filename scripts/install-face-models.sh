@@ -10,7 +10,7 @@ mkdir -p "$MODEL_DIR"
 BASE_URL="https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights"
 
 FILES=(
-  "tiny_face_detector_model-weights_manifest.json"
+  "ssd_mobilenetv1_model-weights_manifest.json"
   "face_landmark_68_model-weights_manifest.json"
   "face_recognition_model-weights_manifest.json"
 )
