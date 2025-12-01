@@ -11,9 +11,6 @@ import PasswordGate from "./password-gate"
 const SimpleWebcam = dynamic(() => import("@/components/simple-webcam"), {
   ssr: false,
 })
-const ValidatedFaceDetector = dynamic(() => import("@/components/validated-face-detector"), {
-  ssr: false,
-})
 
 export default function Home() {
   const [unlocked, setUnlocked] = useState(() => {
@@ -34,9 +31,6 @@ export default function Home() {
   const webcamRef = useRef<WebcamRef>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const router = useRouter()
-  const [scanStage, setScanStage] = useState(0)
-  const [isDetecting, setIsDetecting] = useState(false)
-  const DETECTOR_DEFAULT_SCANS = 20
 
   // Help image fallback component
   function HelpImageFallback() {
@@ -80,17 +74,16 @@ export default function Home() {
 
   const handleAnimationComplete = () => {
     setShowAnimation(false)
-  // Removed setIsAnalyzing
-    // Check for faceDescriptor after animation completes
-    const storedDescriptor = sessionStorage.getItem("faceDescriptor")
-    if (storedDescriptor) {
-      setFaceDescriptor(JSON.parse(storedDescriptor))
+    setIsCapturing(false)
+    // Image is already captured, just mark as ready
+    if (capturedImage) {
+      setFaceDescriptor([1]) // Dummy value to enable proceed button
       setNoFaceWarning(false)
-      // Stop camera now that we have the descriptor
       try {
         webcamRef.current?.stopCamera?.()
       } catch (e) {}
-  // Removed setIsAnalyzing
+    } else {
+      setNoFaceWarning(true)
     }
   }
 
@@ -109,16 +102,20 @@ export default function Home() {
   }
 
   const handleProceed = async () => {
-    if (!faceDescriptor) return
+    if (!capturedImage) {
+      setErrorMessage("No image captured")
+      return
+    }
 
     setIsGenerating(true)
     setErrorMessage(null)
 
     try {
-      const res = await fetch("/api/generateTrack", {
+      // Use Rekognition instead of face-api.js
+      const res = await fetch("/api/rekognition-track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ descriptor: faceDescriptor }),
+        body: JSON.stringify({ imageData: capturedImage }),
       })
 
       const data = await res.json()
@@ -145,15 +142,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-4 md:py-16">
-      {/* Full-page blocking overlay while detection is running to prevent any clicks/focus changes */}
-      {isDetecting && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed inset-0 z-50 bg-transparent"
-          style={{ pointerEvents: "auto" }}
-        />
-      )}
       <div className="w-full max-w-6xl mx-auto relative">\n        <div className="text-center mb-3 md:mb-8">
           <h1 className="text-3xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
             JILL BLUTT&apos;S REVOLUTIONARY
@@ -205,29 +193,6 @@ export default function Home() {
                 />
                 <CaptureAnimation isVisible={showAnimation} onAnimationComplete={handleAnimationComplete} />
                 <GlitchOverlay isVisible={isGenerating} />
-                {(showAnimation || isCapturing) && (
-                  <ValidatedFaceDetector
-                    // videoRef may be nullable; validator expects a non-nullable ref type, cast safely
-                    videoRef={videoRef as React.RefObject<HTMLVideoElement>}
-                    onFaceDetected={handleFaceDetected}
-                    onNoFaceDetected={handleNoFaceDetected}
-                    isCapturing={showAnimation || isCapturing}
-                    totalScans={DETECTOR_DEFAULT_SCANS}
-                    maxRetries={3}
-                    onScanProgress={(stage, total, detecting) => {
-                      try { console.debug(`[page] scanProgress stage=${stage} total=${total} detecting=${detecting}`) } catch (e) {}
-                      setScanStage(stage)
-                      setIsDetecting(detecting)
-                      // When detecting finishes, show the final stage briefly then clear UI states so it's not jarring
-                      if (!detecting) {
-                        setIsCapturing(false)
-                        setShowAnimation(false)
-                        // Keep the UI showing the final stage for a short moment so users perceive completion
-                        setTimeout(() => setScanStage(0), 650)
-                      }
-                    }}
-                  />
-                )}
               </div>
             </div>
           </div>
@@ -258,18 +223,18 @@ export default function Home() {
 
           <div className="mt-3 md:mt-6 flex justify-center">
           {!faceDescriptor ? (
-            isDetecting || isCapturing ? (
+            isCapturing ? (
               <button
                 className="px-8 md:px-12 py-2 md:py-3 border-2 border-[#2d2d2d] text-[#8b8b8b] font-gothic transition-colors cursor-not-allowed bg-[#f0efe8]"
                 disabled
               >
-                {`SCANNING ${scanStage || 0}/${DETECTOR_DEFAULT_SCANS}... HOLD STILL`}
+                CAPTURING...
               </button>
               ) : (
               <button
                 onClick={handleCaptureClick}
                 className="px-8 md:px-12 py-2 md:py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic hover:bg-[#2d2d2d] hover:text-[#e8e6d9] transition-colors"
-                disabled={isCapturing || isDetecting}
+                disabled={isCapturing}
               >
                 CAPTURE
               </button>
@@ -284,8 +249,8 @@ export default function Home() {
             </button>
           )}
         </div>
-        {/* Help link below capture button - do not show while capturing/detecting (initial overlay) */}
-        {!isDetecting && !isCapturing && (
+        {/* Help link below capture button */}
+        {!isCapturing && (
           <div className="mt-1 text-center">
             <button
               onClick={() => setShowHelp(true)}
