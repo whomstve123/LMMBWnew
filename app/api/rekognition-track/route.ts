@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       
       // Look up the track by external image ID (which is our track ID)
       const trackId = match.externalImageId;
+      console.log(`[rekognition-track] Looking up track_id: ${trackId}`);
       
       const { data: mapping, error } = await supabase
         .from("face_track_mappings")
@@ -43,9 +44,17 @@ export async function POST(request: Request) {
         .eq("track_id", trackId)
         .single();
 
-      if (error || !mapping) {
+      if (error) {
+        console.error(`[rekognition-track] Database lookup error:`, error);
+        return NextResponse.json({ error: "Track mapping not found", details: error.message }, { status: 404 });
+      }
+      
+      if (!mapping) {
+        console.error(`[rekognition-track] No mapping found for track_id: ${trackId}`);
         return NextResponse.json({ error: "Track mapping not found" }, { status: 404 });
       }
+
+      console.log(`[rekognition-track] Found mapping, audio_url: ${mapping.audio_url}`);
 
       // Update access count
       await supabase
