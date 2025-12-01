@@ -147,10 +147,10 @@ export default function YourSoundPage() {
         isVisible={showProgressiveAnimation}
         onComplete={handleAnimationComplete}
       />
-      <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-4 md:py-16">
+      <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-2 md:py-8">
       <div className="w-full max-w-6xl mx-auto relative">
         {/* Title */}
-        <div className="text-center mb-3 md:mb-8">
+        <div className="text-center mb-2 md:mb-4">
           <h1 className="text-3xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
             JILL BLUTT&apos;S REVOLUTIONARY
           </h1>
@@ -160,13 +160,13 @@ export default function YourSoundPage() {
         {/* Center audio player - without side text */}
         <div className="flex justify-center items-center">
           <div className="w-64 md:w-80 relative">
-            <div className="bg-transparent p-3 md:p-6 rounded-lg text-center">
-              <h2 className="text-2xl md:text-3xl font-gothic text-[#2d2d2d] mb-3 md:mb-6">THIS SOUND WAS MADE FOR YOU</h2>
+            <div className="bg-transparent p-2 md:p-4 rounded-lg text-center">
+              <h2 className="text-2xl md:text-3xl font-gothic text-[#2d2d2d] mb-2 md:mb-4">THIS SOUND WAS MADE FOR YOU</h2>
 
               {(isLoading || showProgressiveAnimation) ? (
                 <div className="py-8 text-[#2d2d2d] font-gothic">INITIALIZING YOUR UNIQUE SOUND...</div>
               ) : (
-                <div className="space-y-3 md:space-y-6">
+                <div className="space-y-2 md:space-y-4">
                   {/* Removed error message before audio player loads */}
                   {audioUrl && (
                     <CustomAudioPlayer
@@ -190,7 +190,7 @@ export default function YourSoundPage() {
                   {emailSent && (
                     <>
                       <p className="text-[#2d2d2d] text-sm">A download link has been sent to your email address.</p>
-                      <div className="mt-3 text-center">
+                      <div className="mt-2 text-center">
                         <button
                           onClick={() => setShowHelp(true)}
                           className={`text-black font-bold`}
@@ -203,7 +203,7 @@ export default function YourSoundPage() {
                   )}
 
                   {selectedStems && (
-                    <div className="mt-4 text-xs text-[#2d2d2d] text-left">
+                    <div className="mt-2 text-xs text-[#2d2d2d] text-left">
                       <p className="font-bold mb-1">Your unique sound includes:</p>
                       <ul className="list-disc pl-4">
                         {Object.entries(selectedStems).map(([category, url]) => (
@@ -229,6 +229,22 @@ export default function YourSoundPage() {
           </div>
         </div>
         {/* Help button is rendered inline under the email-sent copy (matching the home page) */}
+
+        {/* Start Over button */}
+        <div className="mt-4 md:mt-6 text-center">
+          <button
+            onClick={() => {
+              // Clear session data but preserve password unlock state
+              sessionStorage.removeItem("faceDescriptor");
+              sessionStorage.removeItem("audioUrl");
+              sessionStorage.removeItem("userEmail");
+              router.push("/");
+            }}
+            className="px-6 py-2 md:py-3 border-2 border-[#2d2d2d] text-[#2d2d2d] font-gothic hover:bg-[#2d2d2d] hover:text-[#e8e6d9] transition-colors"
+          >
+            START OVER
+          </button>
+        </div>
 
         {showHelp && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">

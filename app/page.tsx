@@ -16,7 +16,12 @@ const ValidatedFaceDetector = dynamic(() => import("@/components/validated-face-
 })
 
 export default function Home() {
-  const [unlocked, setUnlocked] = useState(false)
+  const [unlocked, setUnlocked] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("passwordUnlocked") === "true"
+    }
+    return false
+  })
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [showAnimation, setShowAnimation] = useState(false)
   const [faceDescriptor, setFaceDescriptor] = useState<number[] | null>(null)
@@ -132,7 +137,10 @@ export default function Home() {
   }
 
   if (!unlocked) {
-    return <PasswordGate onUnlock={() => setUnlocked(true)} />
+    return <PasswordGate onUnlock={() => {
+      setUnlocked(true)
+      localStorage.setItem("passwordUnlocked", "true")
+    }} />
   }
 
   return (
