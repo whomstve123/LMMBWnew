@@ -138,16 +138,17 @@ export default function EmailPage() {
                 <input type="hidden" name="faceDescriptor" value={faceDescriptor || ""} />
               </div>
 
-              <div className="mb-4 flex items-start gap-2">
+              <div className="mb-4 flex items-start gap-1.5">
                 <input
                   type="checkbox"
                   id="promotional-consent"
                   checked={promotionalConsent}
                   onChange={(e) => setPromotionalConsent(e.target.checked)}
-                  className="mt-1 cursor-pointer"
+                  className="mt-0.5 cursor-pointer opacity-40 w-3 h-3"
+                  style={{ accentColor: '#2d2d2d' }}
                 />
-                <label htmlFor="promotional-consent" className="text-[#2d2d2d] text-xs opacity-70 cursor-pointer">
-                  I consent to receive occasional promotional emails about Mind Un-Wanderer updates and related products.
+                <label htmlFor="promotional-consent" className="text-[#2d2d2d] text-[10px] opacity-40 cursor-pointer leading-tight">
+                  I consent to receive occasional promotional emails from Jill Blutt
                 </label>
               </div>
 
