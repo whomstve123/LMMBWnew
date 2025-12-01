@@ -82,9 +82,7 @@ export default function Home() {
       setFaceDescriptor([1]) // Dummy value to enable proceed button
       setNoFaceWarning(false)
       console.log("[handleAnimationComplete] Set faceDescriptor to enable PROCEED button")
-      try {
-        webcamRef.current?.stopCamera?.()
-      } catch (e) {}
+      // Don't stop camera yet - wait for proceed button
     } else {
       console.log("[handleAnimationComplete] No captured image!")
       setNoFaceWarning(true)
@@ -110,6 +108,11 @@ export default function Home() {
       setErrorMessage("No image captured")
       return
     }
+
+    // Stop the webcam now that user clicked proceed
+    try {
+      webcamRef.current?.stopCamera?.()
+    } catch (e) {}
 
     console.log("[handleProceed] Starting...")
     setIsGenerating(true)
@@ -153,7 +156,8 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#e8e6d9] flex flex-col items-center justify-center relative px-4 py-4 md:py-16">
-      <div className="w-full max-w-6xl mx-auto relative">\n        <div className="text-center mb-3 md:mb-8">
+      <div className="w-full max-w-6xl mx-auto relative">
+        <div className="text-center mb-3 md:mb-8">
           <h1 className="text-3xl md:text-6xl font-gothic tracking-tight text-[#2d2d2d]">
             JILL BLUTT&apos;S REVOLUTIONARY
           </h1>

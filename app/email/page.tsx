@@ -28,8 +28,9 @@ export default function EmailPage() {
     e.preventDefault()
 
     const audioUrl = sessionStorage.getItem("audioUrl")
+    const trackId = sessionStorage.getItem("trackId") // Get from Rekognition response
 
-    if (!email || !faceDescriptor || !audioUrl) {
+    if (!email || !audioUrl || !trackId) {
       setError("Email and track data are required")
       return
     }
@@ -41,22 +42,6 @@ export default function EmailPage() {
       // Store email in session storage for reference on the sound page
       sessionStorage.setItem("userEmail", email)
 
-      // Parse the descriptor to get trackId using simple hash (matches server logic)
-      const descriptor = JSON.parse(faceDescriptor)
-      const descriptorString = JSON.stringify(descriptor.map((v: number) => Number(Math.round(v))))
-      
-      // Simple hash function to generate trackId (client-side)
-      const hashCode = (str: string) => {
-        let hash = 0
-        for (let i = 0; i < str.length; i++) {
-          const char = str.charCodeAt(i)
-          hash = ((hash << 5) - hash) + char
-          hash = hash & hash
-        }
-        return Math.abs(hash).toString(16).substring(0, 10).padStart(10, '0')
-      }
-      const trackId = hashCode(descriptorString)
-
       // Save email and consent to database
       const saveEmailResponse = await fetch("/api/save-email", {
         method: "POST",
@@ -66,7 +51,7 @@ export default function EmailPage() {
         body: JSON.stringify({ 
           email, 
           trackId,
-          descriptor,
+          descriptor: null, // Not using descriptors with Rekognition
           promotionalConsent
         }),
       })
