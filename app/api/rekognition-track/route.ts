@@ -28,11 +28,12 @@ export async function POST(request: Request) {
 
     console.log("[rekognition-track] Searching for matching face...");
 
-    // Search for matching face with 90% similarity threshold
-    const match = await searchFaceByImage(imageBytes, 90);
+    // Search for matching face with 95% similarity threshold (stricter matching)
+    const match = await searchFaceByImage(imageBytes, 95);
 
     if (match && match.externalImageId) {
-      console.log(`[rekognition-track] Match found! Face ID: ${match.faceId}, Similarity: ${match.similarity}%`);
+      console.log(`[rekognition-track] Match found! Face ID: ${match.faceId}, Similarity: ${match.similarity}%, ExternalImageId: ${match.externalImageId}`);
+      console.log(`[rekognition-track] Using 95% threshold - similarity is ${match.similarity || 0}%`);
       
       // Look up the track by external image ID (which is our track ID)
       const trackId = match.externalImageId;
