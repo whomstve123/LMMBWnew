@@ -47,9 +47,9 @@ export async function POST(request: Request) {
   // Using Euclidean distance on quantized descriptors with SSD MobilenetV1
   // Based on actual measurements:
   // Same person, same session: 0.0000
-  // Same person, different times: 77.5177, 98.1835
-  // Setting threshold at 100 to match same person across sessions
-  const DISTANCE_THRESHOLD = 100;
+  // Same person, different times: 77.5177, 98.1835, 105.1380
+  // Setting threshold at 110 to match same person across sessions with buffer
+  const DISTANCE_THRESHOLD = 110;
     let bestDistance = Infinity
     let bestMapping: any = null
     for (const mapping of allMappings || []) {
