@@ -69,7 +69,6 @@ export async function POST(request: Request) {
 
     // Generate track ID from random data
     const trackId = crypto.randomBytes(5).toString("hex");
-    const fileName = `${trackId}.mp3`;
 
     // Index the face with track ID as external image ID
     const indexed = await indexFace(imageBytes, trackId);
@@ -77,7 +76,7 @@ export async function POST(request: Request) {
 
     // Select stems and generate audio
     const stemChoice = selectStemsFromHash(trackId);
-    const audioUrl = await processAudioJob(stemChoice, fileName);
+    const audioUrl = await processAudioJob(trackId, stemChoice);
 
     // Store in database
     const { error: insertError } = await supabase
