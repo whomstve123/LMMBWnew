@@ -73,16 +73,19 @@ export default function Home() {
   }
 
   const handleAnimationComplete = () => {
+    console.log("[handleAnimationComplete] capturedImage:", !!capturedImage)
     setShowAnimation(false)
     setIsCapturing(false)
     // Image is already captured, just mark as ready
     if (capturedImage) {
       setFaceDescriptor([1]) // Dummy value to enable proceed button
       setNoFaceWarning(false)
+      console.log("[handleAnimationComplete] Set faceDescriptor to enable PROCEED button")
       try {
         webcamRef.current?.stopCamera?.()
       } catch (e) {}
     } else {
+      console.log("[handleAnimationComplete] No captured image!")
       setNoFaceWarning(true)
     }
   }
@@ -107,10 +110,12 @@ export default function Home() {
       return
     }
 
+    console.log("[handleFaceDetected] Starting... capturedImage:", !!capturedImage)
     setIsGenerating(true)
     setErrorMessage(null)
 
     try {
+      console.log("[handleFaceDetected] Calling rekognition-track API...")
       // Use Rekognition instead of face-api.js
       const res = await fetch("/api/rekognition-track", {
         method: "POST",
@@ -118,16 +123,22 @@ export default function Home() {
         body: JSON.stringify({ imageData: capturedImage }),
       })
 
+      console.log("[handleFaceDetected] Response status:", res.status)
       const data = await res.json()
+      console.log("[handleFaceDetected] Response data:", data)
 
       if (!res.ok || !data.audioUrl) {
+        console.error("[handleFaceDetected] Missing audioUrl or error")
         throw new Error(data.error || "Track creation failed")
       }
 
+      console.log("[handleFaceDetected] Got audioUrl, saving and navigating...")
       sessionStorage.setItem("audioUrl", data.audioUrl)
+      console.log("[handleFaceDetected] Calling router.push(/email)...")
       router.push("/email")
+      console.log("[handleFaceDetected] router.push called")
     } catch (err: any) {
-      console.error(err)
+      console.error("[handleFaceDetected] Error:", err)
       setErrorMessage("Something went wrong while creating your track. Please try again.")
       setIsGenerating(false)
     }

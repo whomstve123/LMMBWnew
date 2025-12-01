@@ -65,12 +65,15 @@ export async function POST(request: Request) {
         })
         .eq("id", mapping.id);
 
-      return NextResponse.json({
+      const response = {
         audioUrl: mapping.audio_url,
         trackId: mapping.track_id,
         matched: true,
         similarity: match.similarity,
-      });
+      };
+      
+      console.log(`[rekognition-track] Returning response:`, response);
+      return NextResponse.json(response);
     }
 
     // No match found - create new track
