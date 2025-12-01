@@ -24,6 +24,7 @@ export async function loadFaceApiModels(modelBaseUrl = "/models") {
   const api = await ensureFaceApiImported()
   try {
     await api.nets.tinyFaceDetector.load(modelBaseUrl)
+    await api.nets.faceLandmark68Net.load(modelBaseUrl)
     await api.nets.faceRecognitionNet.load(modelBaseUrl)
     modelsLoaded = true
     return true

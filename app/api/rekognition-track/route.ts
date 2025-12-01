@@ -44,14 +44,35 @@ export async function POST(request: Request) {
         .eq("track_id", trackId)
         .single();
 
-      if (error) {
-        console.error(`[rekognition-track] Database lookup error:`, error);
-        return NextResponse.json({ error: "Track mapping not found", details: error.message }, { status: 404 });
-      }
-      
-      if (!mapping) {
-        console.error(`[rekognition-track] No mapping found for track_id: ${trackId}`);
-        return NextResponse.json({ error: "Track mapping not found" }, { status: 404 });
+      if (error || !mapping) {
+        // Face exists in Rekognition but not in DB (orphaned entry)
+        // Create the missing database entry instead of erroring
+        console.log(`[rekognition-track] Rekognition match but no DB entry (orphaned). Creating DB entry for track_id: ${trackId}`);
+        
+        const stemChoice = selectStemsFromHash(trackId);
+        const audioUrl = await processAudioJob(trackId, stemChoice);
+
+        const { error: insertError } = await supabase
+          .from("face_track_mappings")
+          .insert({
+            track_id: trackId,
+            audio_url: audioUrl,
+            face_descriptor: null,
+            generated_count: 1,
+            last_accessed: new Date().toISOString(),
+          });
+
+        if (insertError) {
+          console.error("[rekognition-track] Database insert error:", insertError);
+          return NextResponse.json({ error: "Failed to save mapping" }, { status: 500 });
+        }
+
+        return NextResponse.json({
+          audioUrl,
+          trackId,
+          matched: true,
+          similarity: match.similarity,
+        });
       }
 
       console.log(`[rekognition-track] Found mapping, audio_url: ${mapping.audio_url}`);

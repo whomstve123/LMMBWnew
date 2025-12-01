@@ -4,6 +4,7 @@ import {
   IndexFacesCommand,
   SearchFacesByImageCommand,
   DetectFacesCommand,
+  DeleteCollectionCommand,
 } from "@aws-sdk/client-rekognition";
 
 const rekognitionClient = new RekognitionClient({
@@ -15,6 +16,24 @@ const rekognitionClient = new RekognitionClient({
 });
 
 const COLLECTION_ID = process.env.REKOGNITION_COLLECTION_ID || "face-tracks-collection";
+
+/**
+ * Delete and recreate the collection (clears all faces)
+ */
+export async function resetCollection() {
+  try {
+    await rekognitionClient.send(new DeleteCollectionCommand({ CollectionId: COLLECTION_ID }));
+    console.log(`[Rekognition] Deleted collection: ${COLLECTION_ID}`);
+  } catch (error: any) {
+    if (error.name === "ResourceNotFoundException") {
+      console.log(`[Rekognition] Collection doesn't exist: ${COLLECTION_ID}`);
+    } else {
+      throw error;
+    }
+  }
+  
+  await ensureCollection();
+}
 
 /**
  * Ensure the Rekognition collection exists (create if needed)

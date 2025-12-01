@@ -13,17 +13,11 @@ const SimpleWebcam = dynamic(() => import("@/components/simple-webcam"), {
 })
 
 export default function Home() {
-  const [unlocked, setUnlocked] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("passwordUnlocked") === "true"
-    }
-    return false
-  })
+  const [unlocked, setUnlocked] = useState(false)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [showAnimation, setShowAnimation] = useState(false)
   const [faceDescriptor, setFaceDescriptor] = useState<number[] | null>(null)
   const [isCapturing, setIsCapturing] = useState(false)
-  // Removed isAnalyzing state
   const [isGenerating, setIsGenerating] = useState(false)
   const [noFaceWarning, setNoFaceWarning] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -31,6 +25,13 @@ export default function Home() {
   const webcamRef = useRef<WebcamRef>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const router = useRouter()
+
+  // Check password unlock status on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setUnlocked(localStorage.getItem("passwordUnlocked") === "true")
+    }
+  }, [])
 
   // Help image fallback component
   function HelpImageFallback() {
@@ -110,36 +111,33 @@ export default function Home() {
       return
     }
 
-    console.log("[handleFaceDetected] Starting... capturedImage:", !!capturedImage)
+    console.log("[handleProceed] Starting...")
     setIsGenerating(true)
     setErrorMessage(null)
 
     try {
-      console.log("[handleFaceDetected] Calling rekognition-track API...")
-      // Use Rekognition instead of face-api.js
+      // Send image directly to Rekognition
       const res = await fetch("/api/rekognition-track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageData: capturedImage }),
       })
 
-      console.log("[handleFaceDetected] Response status:", res.status)
+      console.log("[handleProceed] Response status:", res.status)
       const data = await res.json()
-      console.log("[handleFaceDetected] Response data:", data)
+      console.log("[handleProceed] Response data:", data)
 
       if (!res.ok || !data.audioUrl) {
-        console.error("[handleFaceDetected] Missing audioUrl or error")
+        console.error("[handleProceed] Error:", data.error)
         throw new Error(data.error || "Track creation failed")
       }
 
-      console.log("[handleFaceDetected] Got audioUrl, saving and navigating...")
+      console.log("[handleProceed] Success, navigating to /email")
       sessionStorage.setItem("audioUrl", data.audioUrl)
-      console.log("[handleFaceDetected] Calling router.push(/email)...")
       router.push("/email")
-      console.log("[handleFaceDetected] router.push called")
     } catch (err: any) {
-      console.error("[handleFaceDetected] Error:", err)
-      setErrorMessage("Something went wrong while creating your track. Please try again.")
+      console.error("[handleProceed] Error:", err)
+      setErrorMessage(err.message || "Something went wrong. Please try again.")
       setIsGenerating(false)
     }
   }
