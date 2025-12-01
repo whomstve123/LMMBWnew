@@ -234,7 +234,7 @@ export default function ValidatedFaceDetector({
 
     // Auto-retry loop for face-api detection
     retryRef.current = 0
-    const minSuccessful = Math.min(3, TOTAL_SCANS || 1) // Require at least 3 successful scans
+    const minSuccessful = Math.min(7, TOTAL_SCANS || 1) // Require at least 7 successful scans
 
     while (retryRef.current <= MAX_RETRIES) {
       retryRef.current += 1
@@ -283,6 +283,44 @@ export default function ValidatedFaceDetector({
 
       // Evaluate attempt
       if (descriptors.length >= minSuccessful) {
+      // QUALITY CHECK: Verify descriptor consistency
+      // Calculate pairwise Euclidean distances between all descriptors
+      function euclideanDistance(a: Float32Array, b: Float32Array): number {
+        let sum = 0
+        for (let i = 0; i < a.length; i++) {
+          const diff = a[i] - b[i]
+          sum += diff * diff
+        }
+        return Math.sqrt(sum)
+      }
+      
+      let maxDistance = 0
+      for (let i = 0; i < descriptors.length; i++) {
+        for (let j = i + 1; j < descriptors.length; j++) {
+          const dist = euclideanDistance(descriptors[i], descriptors[j])
+          if (dist > maxDistance) maxDistance = dist
+        }
+      }
+      
+      // If descriptors vary too much internally, reject and retry
+      // Max acceptable variance within the same scanning session: 0.3 (normalized space)
+      const MAX_INTERNAL_VARIANCE = 0.3
+      if (maxDistance > MAX_INTERNAL_VARIANCE) {
+        console.warn(`[ValidatedFaceDetector] Scan quality too low - internal variance ${maxDistance.toFixed(4)} exceeds ${MAX_INTERNAL_VARIANCE}. Retrying...`)
+        if (retryRef.current <= MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, 400))
+          continue
+        } else {
+          setError("Face detection quality too low. Please ensure good lighting and hold still.")
+          notify(descriptors.length, false)
+          setIsDetecting(false)
+          setScanStage(descriptors.length)
+          return
+        }
+      }
+      
+      console.info(`[ValidatedFaceDetector] Scan quality good - internal variance ${maxDistance.toFixed(4)}/${MAX_INTERNAL_VARIANCE}`)
+      
       // Build per-dimension arrays
       const dim = descriptors[0].length
       const perDim: number[][] = Array.from({ length: dim }, () => [])

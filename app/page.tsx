@@ -36,7 +36,7 @@ export default function Home() {
   const router = useRouter()
   const [scanStage, setScanStage] = useState(0)
   const [isDetecting, setIsDetecting] = useState(false)
-  const DETECTOR_DEFAULT_SCANS = 5
+  const DETECTOR_DEFAULT_SCANS = 10
 
   // Help image fallback component
   function HelpImageFallback() {
