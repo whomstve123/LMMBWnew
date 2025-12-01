@@ -134,6 +134,8 @@ export default function Home() {
 
       console.log("[handleProceed] Success, navigating to /email")
       sessionStorage.setItem("audioUrl", data.audioUrl)
+      sessionStorage.setItem("trackId", data.trackId)
+      sessionStorage.setItem("faceDescriptor", JSON.stringify([1])) // Dummy value for email page check
       router.push("/email")
     } catch (err: any) {
       console.error("[handleProceed] Error:", err)
