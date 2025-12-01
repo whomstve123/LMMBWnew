@@ -9,95 +9,47 @@ export async function POST(request: Request) {
   try {
     const { email, trackId, descriptor, promotionalConsent } = await request.json();
 
-    if (!email || !trackId || !descriptor) {
-      return NextResponse.json({ error: "Email, trackId, and descriptor are required" }, { status: 400 });
+    console.log('[save-email] Received:', { email, trackId, hasDescriptor: !!descriptor, promotionalConsent });
+
+    if (!email || !trackId) {
+      return NextResponse.json({ error: "Email and trackId are required" }, { status: 400 });
     }
 
-    // Ensure descriptor is strictly integers
-    const intDescriptor = descriptor.map((v: number) => Number(Math.round(v)));
-
-    // Find the matching face mapping by descriptor similarity
-    const { data: allMappings, error: fetchError } = await supabase
+    // Find the matching face mapping by trackId (from Rekognition)
+    const { data: mapping, error: fetchError } = await supabase
       .from('face_track_mappings')
-      .select('id, face_descriptor, track_id');
+      .select('id, track_id')
+      .eq('track_id', trackId)
+      .single();
 
-    if (fetchError) {
-      console.error('[save-email] Failed to fetch mappings:', fetchError);
-      return NextResponse.json({ error: 'Failed to lookup mapping' }, { status: 500 });
-    }
-
-    // Euclidean distance function (standard for face-api.js)
-    function euclideanDistance(a: number[], b: number[]): number {
-      let sum = 0;
-      for (let i = 0; i < a.length; i++) {
-        const diff = a[i] - b[i];
-        sum += diff * diff;
-      }
-      return Math.sqrt(sum);
-    }
-
-    // Find best matching mapping
-    let matchedMapping = null;
-    let bestDistance = Infinity;
-    const DISTANCE_THRESHOLD = 110; // SSD MobilenetV1 with quality filtering: same person <110
-
-    for (const mapping of allMappings || []) {
-      if (!mapping.face_descriptor) continue;
-
-      let stored: number[] | null = null;
-      try {
-        if (Array.isArray(mapping.face_descriptor)) {
-          stored = mapping.face_descriptor.map((v: any) => Number(v));
-        } else if (typeof mapping.face_descriptor === 'string') {
-          stored = JSON.parse(mapping.face_descriptor).map((v: any) => Number(v));
-        }
-      } catch (e) {
-        continue;
-      }
-
-      if (!stored || stored.length !== intDescriptor.length) continue;
-
-      const distance = euclideanDistance(intDescriptor, stored);
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        if (distance <= DISTANCE_THRESHOLD) {
-          matchedMapping = mapping;
-          break;
-        }
-      }
-    }
-
-    if (!matchedMapping) {
-      console.error('[save-email] No matching face mapping found');
+    if (fetchError || !mapping) {
+      console.error('[save-email] No matching face mapping found for trackId:', trackId, fetchError);
       return NextResponse.json({ error: 'No matching face mapping found' }, { status: 404 });
     }
+
+    console.log('[save-email] Found mapping:', mapping);
 
     // Update the mapping with email and consent
     const { error: updateError } = await supabase
       .from('face_track_mappings')
       .update({
         user_email: email,
-        promotional_consent: promotionalConsent,
+        promotional_consent: promotionalConsent ?? false,
       })
-      .eq('id', matchedMapping.id);
+      .eq('id', mapping.id);
 
     if (updateError) {
       console.error('[save-email] Failed to update mapping:', updateError);
-      return NextResponse.json({ error: 'Failed to save email', details: updateError.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to save email' }, { status: 500 });
     }
 
-    console.log(`[save-email] Saved email for mapping id=${matchedMapping.id}, consent=${promotionalConsent}`);
-
-    return NextResponse.json({
-      success: true,
-      message: "Email saved successfully"
-    });
-
+    console.log('[save-email] Successfully saved email for track:', trackId);
+    return NextResponse.json({ success: true, message: "Email saved successfully" });
   } catch (error) {
-    console.error("[save-email] Error:", error);
+    console.error('[save-email] Error:', error);
     return NextResponse.json({ 
-      error: "Failed to save email",
-      details: error instanceof Error ? error.message : "Unknown error"
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }

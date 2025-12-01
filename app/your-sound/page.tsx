@@ -40,10 +40,12 @@ export default function YourSoundPage() {
   }
 
   useEffect(() => {
-    // Get face descriptor from sessionStorage
-    const storedDescriptor = sessionStorage.getItem("faceDescriptor")
-    if (!storedDescriptor) {
-  // No face descriptor found - redirecting to home (debug log removed)
+    // Get audioUrl from sessionStorage (set by Rekognition flow)
+    const storedAudioUrl = sessionStorage.getItem("audioUrl")
+    const storedTrackId = sessionStorage.getItem("trackId")
+    
+    if (!storedAudioUrl) {
+      console.log("[your-sound] No audioUrl found - redirecting to home")
       router.push("/")
       return
     }
@@ -54,17 +56,18 @@ export default function YourSoundPage() {
       setEmailSent(true)
     }
 
-    setFaceHash("descriptor") // For compatibility, but not used for matching
-    if (!isRequesting) {
-      generateTrack(JSON.parse(storedDescriptor))
-      // Set a fallback timeout to hide animation if audio doesn't load
-      if (audioLoadTimeoutRef.current) clearTimeout(audioLoadTimeoutRef.current)
-      audioLoadTimeoutRef.current = setTimeout(() => {
-        setShowProgressiveAnimation(false)
-        setError("Audio failed to load. Please try again or check your connection.")
-      }, 20000) // 20 seconds
-    }
-  }, [router, retryCount])
+    console.log("[your-sound] Loading audio from Rekognition:", storedAudioUrl)
+    setAudioUrl(storedAudioUrl)
+    setTrackId(storedTrackId)
+    setIsLoading(false)
+    
+    // Set a fallback timeout to hide animation if audio doesn't load
+    if (audioLoadTimeoutRef.current) clearTimeout(audioLoadTimeoutRef.current)
+    audioLoadTimeoutRef.current = setTimeout(() => {
+      setShowProgressiveAnimation(false)
+      setError("Audio failed to load. Please try again or check your connection.")
+    }, 20000) // 20 seconds
+  }, [router])
 
   const generateTrack = async (descriptor: number[]) => {
     if (isRequesting) return;

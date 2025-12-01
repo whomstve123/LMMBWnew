@@ -109,11 +109,6 @@ export default function Home() {
       return
     }
 
-    // Stop the webcam now that user clicked proceed
-    try {
-      webcamRef.current?.stopCamera?.()
-    } catch (e) {}
-
     console.log("[handleProceed] Starting...")
     setIsGenerating(true)
     setErrorMessage(null)
@@ -139,6 +134,12 @@ export default function Home() {
       sessionStorage.setItem("audioUrl", data.audioUrl)
       sessionStorage.setItem("trackId", data.trackId)
       sessionStorage.setItem("faceDescriptor", JSON.stringify([1])) // Dummy value for email page check
+      
+      // Stop webcam right before navigation
+      try {
+        webcamRef.current?.stopCamera?.()
+      } catch (e) {}
+      
       router.push("/email")
     } catch (err: any) {
       console.error("[handleProceed] Error:", err)
