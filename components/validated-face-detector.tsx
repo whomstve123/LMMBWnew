@@ -234,7 +234,7 @@ export default function ValidatedFaceDetector({
 
     // Auto-retry loop for face-api detection
     retryRef.current = 0
-    const minSuccessful = Math.min(8, TOTAL_SCANS || 1) // Require at least 8 successful scans
+    const minSuccessful = Math.min(15, TOTAL_SCANS || 1) // Require at least 15 successful scans
 
     while (retryRef.current <= MAX_RETRIES) {
       retryRef.current += 1
@@ -303,8 +303,8 @@ export default function ValidatedFaceDetector({
       }
       
       // If descriptors vary too much internally, reject and retry
-      // Max acceptable variance within the same scanning session: 0.15 (normalized space)
-      const MAX_INTERNAL_VARIANCE = 0.15
+      // Max acceptable variance within the same scanning session: 0.25 (normalized space)
+      const MAX_INTERNAL_VARIANCE = 0.25
       if (maxDistance > MAX_INTERNAL_VARIANCE) {
         console.warn(`[ValidatedFaceDetector] Scan quality too low - internal variance ${maxDistance.toFixed(4)} exceeds ${MAX_INTERNAL_VARIANCE}. Retrying...`)
         if (retryRef.current <= MAX_RETRIES) {

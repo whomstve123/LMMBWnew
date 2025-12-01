@@ -36,7 +36,7 @@ export default function Home() {
   const router = useRouter()
   const [scanStage, setScanStage] = useState(0)
   const [isDetecting, setIsDetecting] = useState(false)
-  const DETECTOR_DEFAULT_SCANS = 10
+  const DETECTOR_DEFAULT_SCANS = 20
 
   // Help image fallback component
   function HelpImageFallback() {
@@ -263,7 +263,7 @@ export default function Home() {
                 className="px-8 md:px-12 py-2 md:py-3 border-2 border-[#2d2d2d] text-[#8b8b8b] font-gothic transition-colors cursor-not-allowed bg-[#f0efe8]"
                 disabled
               >
-                {`CAPTURING ${scanStage || 0}/${DETECTOR_DEFAULT_SCANS}...`}
+                {`SCANNING ${scanStage || 0}/${DETECTOR_DEFAULT_SCANS}... HOLD STILL`}
               </button>
               ) : (
               <button
