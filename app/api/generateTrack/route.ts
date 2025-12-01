@@ -49,8 +49,8 @@ export async function POST(request: Request) {
   // Same person, same session: 0.0000
   // Same person, different times: 77.5177, 87.1263, 98.1835, 105.1380
   // Phone person (different): 94.1594
-  // Setting threshold at 92 to reject different people while matching same person
-  const DISTANCE_THRESHOLD = 92;
+  // With 10-scan quality filtering (0.15 variance), raising to 100
+  const DISTANCE_THRESHOLD = 100;
     let bestDistance = Infinity
     let bestMapping: any = null
     for (const mapping of allMappings || []) {
