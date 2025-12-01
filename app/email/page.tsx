@@ -10,6 +10,7 @@ export default function EmailPage() {
   const [faceDescriptor, setFaceDescriptor] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [promotionalConsent, setPromotionalConsent] = useState(true)
   const router = useRouter()
 
   // Get faceDescriptor from sessionStorage on mount
@@ -55,6 +56,24 @@ export default function EmailPage() {
         return Math.abs(hash).toString(16).substring(0, 10).padStart(10, '0')
       }
       const trackId = hashCode(descriptorString)
+
+      // Save email and consent to database
+      const saveEmailResponse = await fetch("/api/save-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          email, 
+          trackId,
+          descriptor,
+          promotionalConsent
+        }),
+      })
+
+      if (!saveEmailResponse.ok) {
+        console.warn("Failed to save email to database, continuing anyway")
+      }
 
       // Send email directly (skip /api/submit to avoid Vercel auth issues)
       const response = await fetch("/api/sendEmail", {
@@ -117,6 +136,19 @@ export default function EmailPage() {
                   required
                 />
                 <input type="hidden" name="faceDescriptor" value={faceDescriptor || ""} />
+              </div>
+
+              <div className="mb-4 flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="promotional-consent"
+                  checked={promotionalConsent}
+                  onChange={(e) => setPromotionalConsent(e.target.checked)}
+                  className="mt-1 cursor-pointer"
+                />
+                <label htmlFor="promotional-consent" className="text-[#2d2d2d] text-xs opacity-70 cursor-pointer">
+                  I consent to receive occasional promotional emails about Mind Un-Wanderer updates and related products.
+                </label>
               </div>
 
               <button
