@@ -14,6 +14,7 @@ const SimpleWebcam = dynamic(() => import("@/components/simple-webcam"), {
 
 export default function Home() {
   const [unlocked, setUnlocked] = useState(false)
+  const [isCheckingPassword, setIsCheckingPassword] = useState(true)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [showAnimation, setShowAnimation] = useState(false)
   const [faceDescriptor, setFaceDescriptor] = useState<number[] | null>(null)
@@ -29,7 +30,9 @@ export default function Home() {
   // Check password unlock status on mount
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setUnlocked(localStorage.getItem("passwordUnlocked") === "true")
+      const isUnlocked = sessionStorage.getItem("passwordUnlocked") === "true"
+      setUnlocked(isUnlocked)
+      setIsCheckingPassword(false)
     }
   }, [])
 
@@ -148,10 +151,10 @@ export default function Home() {
     }
   }
 
-  if (!unlocked) {
+  if (isCheckingPassword || !unlocked) {
     return <PasswordGate onUnlock={() => {
       setUnlocked(true)
-      localStorage.setItem("passwordUnlocked", "true")
+      sessionStorage.setItem("passwordUnlocked", "true")
     }} />
   }
 
