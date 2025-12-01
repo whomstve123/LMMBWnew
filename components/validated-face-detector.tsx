@@ -61,10 +61,10 @@ export default function ValidatedFaceDetector({
 
         // Check if models exist by fetching the manifest
         try {
-          const manifestResponse = await fetch(`${MODEL_URL}/ssd_mobilenetv1_model-weights_manifest.json`)
+          const manifestResponse = await fetch(`${MODEL_URL}/mtcnn_model-weights_manifest.json`)
           if (!manifestResponse.ok) {
             // try remote path before falling back
-            const remoteManifest = await fetch(`${REMOTE_MODEL_URL}/ssd_mobilenetv1_model-weights_manifest.json`)
+            const remoteManifest = await fetch(`${REMOTE_MODEL_URL}/mtcnn_model-weights_manifest.json`)
             if (!remoteManifest.ok) {
               console.warn("Model manifest not found locally or remotely, using fallback detection")
               setUseFallback(true)
@@ -112,8 +112,8 @@ export default function ValidatedFaceDetector({
 
         const loadFrom = modelUrlRef.current || MODEL_URL
         try {
-          // Load SSD MobilenetV1 instead of TinyFaceDetector for better accuracy
-          await faceapiRef.current.nets.ssdMobilenetv1.load(loadFrom)
+          // Load MTCNN for better face detection and alignment
+          await faceapiRef.current.nets.mtcnn.load(loadFrom)
           await faceapiRef.current.nets.faceLandmark68Net.load(loadFrom)
           await faceapiRef.current.nets.faceRecognitionNet.load(loadFrom)
         } catch (e) {
@@ -244,8 +244,8 @@ export default function ValidatedFaceDetector({
         setScanStage(i)
         notify(i, true)
         try {
-          // Use SSD MobilenetV1 options for better accuracy
-          const options = new (faceapiRef.current.SsdMobilenetv1Options)({ minConfidence: 0.6 })
+          // Use MTCNN options for better face alignment
+          const options = new (faceapiRef.current.MtcnnOptions)({ minFaceSize: 100, scaleFactor: 0.709 })
           // Run a single unified detection call that yields landmarks + descriptor
           const detectPromise = faceapiRef.current
             .detectSingleFace(videoRef.current, options)

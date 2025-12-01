@@ -12,7 +12,7 @@ if (!fs.existsSync(MODEL_DIR)) {
 }
 
 const manifests = [
-  'tiny_face_detector_model-weights_manifest.json',
+  'mtcnn_model-weights_manifest.json',
   'face_landmark_68_model-weights_manifest.json',
   'face_recognition_model-weights_manifest.json',
 ]
