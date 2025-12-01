@@ -234,7 +234,7 @@ export default function ValidatedFaceDetector({
 
     // Auto-retry loop for face-api detection
     retryRef.current = 0
-    const minSuccessful = Math.min(3, TOTAL_SCANS || 1)
+    const minSuccessful = Math.min(3, TOTAL_SCANS || 1) // Require at least 3 successful scans
 
     while (retryRef.current <= MAX_RETRIES) {
       retryRef.current += 1
@@ -245,7 +245,7 @@ export default function ValidatedFaceDetector({
         notify(i, true)
         try {
           // Use SSD MobilenetV1 options for better accuracy
-          const options = new (faceapiRef.current.SsdMobilenetv1Options)({ minConfidence: 0.5 })
+          const options = new (faceapiRef.current.SsdMobilenetv1Options)({ minConfidence: 0.6 })
           // Run a single unified detection call that yields landmarks + descriptor
           const detectPromise = faceapiRef.current
             .detectSingleFace(videoRef.current, options)
