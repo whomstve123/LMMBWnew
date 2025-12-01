@@ -26,8 +26,10 @@ export default function EmailPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!email || !faceDescriptor) {
-      setError("Email and face data are required")
+    const audioUrl = sessionStorage.getItem("audioUrl")
+
+    if (!email || !faceDescriptor || !audioUrl) {
+      setError("Email and track data are required")
       return
     }
 
@@ -38,19 +40,41 @@ export default function EmailPage() {
       // Store email in session storage for reference on the sound page
       sessionStorage.setItem("userEmail", email)
 
-      const response = await fetch("/api/submit", {
+      // Parse the descriptor to get trackId using simple hash (matches server logic)
+      const descriptor = JSON.parse(faceDescriptor)
+      const descriptorString = JSON.stringify(descriptor.map((v: number) => Number(Math.round(v))))
+      
+      // Simple hash function to generate trackId (client-side)
+      const hashCode = (str: string) => {
+        let hash = 0
+        for (let i = 0; i < str.length; i++) {
+          const char = str.charCodeAt(i)
+          hash = ((hash << 5) - hash) + char
+          hash = hash & hash
+        }
+        return Math.abs(hash).toString(16).substring(0, 10).padStart(10, '0')
+      }
+      const trackId = hashCode(descriptorString)
+
+      // Send email directly (skip /api/submit to avoid Vercel auth issues)
+      const response = await fetch("/api/sendEmail", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, descriptor: JSON.parse(faceDescriptor) }),
+        body: JSON.stringify({ 
+          email, 
+          trackId, 
+          audioUrl,
+          testMode: false 
+        }),
       })
 
       const responseData = await response.json()
 
       if (!response.ok) {
-        console.error("Submit API error:", responseData)
-        throw new Error(responseData.error || responseData.details || "Failed to submit")
+        console.error("Send email API error:", responseData)
+        throw new Error(responseData.error || responseData.details || "Failed to send email")
       }
 
       // Redirect immediately to your-sound page
