@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     // Find best matching mapping
     let matchedMapping = null;
     let bestDistance = Infinity;
-    const DISTANCE_THRESHOLD = 6000; // Scaled for 10000x quantized vectors
+    const DISTANCE_THRESHOLD = 60; // Based on real measurements - same person ~90, different ~93
 
     for (const mapping of allMappings || []) {
       if (!mapping.face_descriptor) continue;

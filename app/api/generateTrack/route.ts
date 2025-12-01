@@ -44,11 +44,13 @@ export async function POST(request: Request) {
     // Debug log incoming descriptor
     console.log('[generateTrack] Incoming descriptor:', intDescriptor);
     let matchedMapping = null;
-  // Using Euclidean distance on quantized descriptors (scaled by 10000x)
-  // For normalized vectors scaled by 10000:
-  // Same person: < 4000-5000
-  // Different people: > 6000
-  const DISTANCE_THRESHOLD = 6000; // Maximum distance to consider a match
+  // Using Euclidean distance on quantized descriptors
+  // Based on actual measurements:
+  // Same person: ~90 (you got 90.1055 twice)
+  // Different person: ~93 (your friend got 93.3542)
+  // The gap is TINY - only ~3 units difference!
+  // Setting threshold at 60 to be safe - only match if distance < 60
+  const DISTANCE_THRESHOLD = 60;
     let bestDistance = Infinity
     let bestMapping: any = null
     for (const mapping of allMappings || []) {
