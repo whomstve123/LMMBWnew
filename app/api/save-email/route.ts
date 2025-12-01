@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     // Find best matching mapping
     let matchedMapping = null;
     let bestDistance = Infinity;
-    const DISTANCE_THRESHOLD = 112; // SSD MobilenetV1: same person 0-110, photos/different >112
+    const DISTANCE_THRESHOLD = 110; // SSD MobilenetV1: same person 0-105, photos/different >110
 
     for (const mapping of allMappings || []) {
       if (!mapping.face_descriptor) continue;
