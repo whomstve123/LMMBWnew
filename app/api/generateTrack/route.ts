@@ -46,11 +46,11 @@ export async function POST(request: Request) {
     let matchedMapping = null;
   // Using Euclidean distance on quantized descriptors
   // Based on actual measurements:
-  // Same person: ~90 (you got 90.1055 twice)
-  // Different person: ~93 (your friend got 93.3542)
-  // The gap is TINY - only ~3 units difference!
-  // Setting threshold at 60 to be safe - only match if distance < 60
-  const DISTANCE_THRESHOLD = 60;
+  // Same person, same session: 0.0000
+  // Same person, different session: 80.0937
+  // Different person (sister): 90.7965, 93.0860
+  // Setting threshold at 85 - will match same person across sessions but not different people
+  const DISTANCE_THRESHOLD = 85;
     let bestDistance = Infinity
     let bestMapping: any = null
     for (const mapping of allMappings || []) {
