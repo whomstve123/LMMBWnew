@@ -30,22 +30,26 @@ export async function POST(request: Request) {
     if (allError) {
       return NextResponse.json({ error: 'Failed to fetch mappings', details: allError.message || allError }, { status: 500 });
     }
-    // Cosine similarity function
-    function cosineSimilarity(a: number[], b: number[]): number {
-      let dot = 0, normA = 0, normB = 0;
+    // Euclidean distance function (standard for face-api.js)
+    // Lower distance = more similar faces
+    function euclideanDistance(a: number[], b: number[]): number {
+      let sum = 0;
       for (let i = 0; i < a.length; i++) {
-        dot += a[i] * b[i];
-        normA += a[i] * a[i];
-        normB += b[i] * b[i];
+        const diff = a[i] - b[i];
+        sum += diff * diff;
       }
-      return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+      return Math.sqrt(sum);
     }
+    
     // Debug log incoming descriptor
     console.log('[generateTrack] Incoming descriptor:', intDescriptor);
     let matchedMapping = null;
-  const SIMILARITY_THRESHOLD = 0.75; // Threshold for face match - values above this are likely the same person
-  // Removed adaptive threshold - if it doesn't meet the threshold, it's a different person
-    let bestSimilarity = -1
+  // Using Euclidean distance on quantized descriptors (scaled by 10000x)
+  // For normalized vectors scaled by 10000:
+  // Same person: < 4000-5000
+  // Different people: > 6000
+  const DISTANCE_THRESHOLD = 6000; // Maximum distance to consider a match
+    let bestDistance = Infinity
     let bestMapping: any = null
     for (const mapping of allMappings || []) {
       if (!mapping.face_descriptor) continue
@@ -66,22 +70,22 @@ export async function POST(request: Request) {
 
       if (!stored || stored.length !== intDescriptor.length) continue
 
-      const similarity = cosineSimilarity(intDescriptor, stored)
-      console.log(`[generateTrack] Comparing to mapping id=${mapping.id}, similarity=${similarity}`)
-      if (similarity > bestSimilarity) {
-        bestSimilarity = similarity
+      const distance = euclideanDistance(intDescriptor, stored)
+      console.log(`[generateTrack] Comparing to mapping id=${mapping.id}, distance=${distance.toFixed(4)}`)
+      if (distance < bestDistance) {
+        bestDistance = distance
         bestMapping = mapping
       }
-      if (similarity >= SIMILARITY_THRESHOLD) {
+      if (distance <= DISTANCE_THRESHOLD) {
         matchedMapping = mapping
-        console.log(`[generateTrack] MATCH FOUND! mapping id=${mapping.id}, similarity=${similarity}`)
+        console.log(`[generateTrack] MATCH FOUND! mapping id=${mapping.id}, distance=${distance.toFixed(4)}`)
         break
       }
     }
     
-    // Log best similarity even if no match found for debugging
+    // Log best distance even if no match found for debugging
     if (!matchedMapping && bestMapping) {
-      console.log(`[generateTrack] No match found. Best similarity was ${bestSimilarity} (threshold=${SIMILARITY_THRESHOLD}) for mapping id=${bestMapping.id}`)
+      console.log(`[generateTrack] No match found. Best distance was ${bestDistance.toFixed(4)} (threshold=${DISTANCE_THRESHOLD}) for mapping id=${bestMapping.id}`)
     }
 
     if (matchedMapping) {

@@ -26,21 +26,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to lookup mapping' }, { status: 500 });
     }
 
-    // Cosine similarity function
-    function cosineSimilarity(a: number[], b: number[]): number {
-      let dot = 0, normA = 0, normB = 0;
+    // Euclidean distance function (standard for face-api.js)
+    function euclideanDistance(a: number[], b: number[]): number {
+      let sum = 0;
       for (let i = 0; i < a.length; i++) {
-        dot += a[i] * b[i];
-        normA += a[i] * a[i];
-        normB += b[i] * b[i];
+        const diff = a[i] - b[i];
+        sum += diff * diff;
       }
-      return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+      return Math.sqrt(sum);
     }
 
     // Find best matching mapping
     let matchedMapping = null;
-    let bestSimilarity = -1;
-    const SIMILARITY_THRESHOLD = 0.75;
+    let bestDistance = Infinity;
+    const DISTANCE_THRESHOLD = 6000; // Scaled for 10000x quantized vectors
 
     for (const mapping of allMappings || []) {
       if (!mapping.face_descriptor) continue;
@@ -58,10 +57,10 @@ export async function POST(request: Request) {
 
       if (!stored || stored.length !== intDescriptor.length) continue;
 
-      const similarity = cosineSimilarity(intDescriptor, stored);
-      if (similarity > bestSimilarity) {
-        bestSimilarity = similarity;
-        if (similarity >= SIMILARITY_THRESHOLD) {
+      const distance = euclideanDistance(intDescriptor, stored);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        if (distance <= DISTANCE_THRESHOLD) {
           matchedMapping = mapping;
           break;
         }
