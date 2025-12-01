@@ -213,7 +213,7 @@ export default function Home() {
                     onNoFaceDetected={handleNoFaceDetected}
                     isCapturing={showAnimation || isCapturing}
                     totalScans={DETECTOR_DEFAULT_SCANS}
-                    maxRetries={2}
+                    maxRetries={3}
                     onScanProgress={(stage, total, detecting) => {
                       try { console.debug(`[page] scanProgress stage=${stage} total=${total} detecting=${detecting}`) } catch (e) {}
                       setScanStage(stage)
