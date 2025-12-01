@@ -46,15 +46,19 @@ export default function EmailPage() {
         body: JSON.stringify({ email, descriptor: JSON.parse(faceDescriptor) }),
       })
 
+      const responseData = await response.json()
+
       if (!response.ok) {
-        throw new Error("Failed to submit")
+        console.error("Submit API error:", responseData)
+        throw new Error(responseData.error || responseData.details || "Failed to submit")
       }
 
       // Redirect immediately to your-sound page
       router.push("/your-sound")
     } catch (err) {
       console.error("Submission error:", err)
-      setError("Failed to submit. Please try again.")
+      const errorMessage = err instanceof Error ? err.message : "Failed to submit. Please try again."
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
