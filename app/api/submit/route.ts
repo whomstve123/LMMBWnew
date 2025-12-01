@@ -44,12 +44,25 @@ export async function POST(request: Request) {
       }
 
     if (!generateTrackResponse.ok) {
-      const errorData = await generateTrackResponse.json();
-      console.error('Track generation failed:', errorData);
-      return NextResponse.json({ error: "Failed to create track" }, { status: 500 });
+      const errorText = await generateTrackResponse.text();
+      console.error('Track generation failed:', generateTrackResponse.status, errorText);
+      return NextResponse.json({ 
+        error: "Failed to create track", 
+        details: errorText.substring(0, 500)
+      }, { status: 500 });
     }
 
-    const trackData = await generateTrackResponse.json();
+    const responseText = await generateTrackResponse.text();
+    let trackData;
+    try {
+      trackData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse generateTrack response as JSON:', responseText.substring(0, 500));
+      return NextResponse.json({ 
+        error: "Invalid response from track generation", 
+        details: responseText.substring(0, 500) 
+      }, { status: 500 });
+    }
     const { trackId, audioUrl } = trackData;
 
     if (!trackId || !audioUrl) {
@@ -92,8 +105,8 @@ export async function POST(request: Request) {
     }
 
     if (!emailResponse.ok) {
-      const emailError = await emailResponse.json();
-      console.error('Email sending failed:', emailError);
+      const emailErrorText = await emailResponse.text();
+      console.error('Email sending failed:', emailResponse.status, emailErrorText);
       // Still return success with track data even if email fails
       return NextResponse.json({ 
         success: true, 
@@ -105,7 +118,14 @@ export async function POST(request: Request) {
       });
     }
 
-    const emailResult = await emailResponse.json();
+    const emailResultText = await emailResponse.text();
+    let emailResult;
+    try {
+      emailResult = JSON.parse(emailResultText);
+    } catch (e) {
+      console.warn('Email response not JSON, treating as success:', emailResultText.substring(0, 200));
+      emailResult = { success: true };
+    }
     console.log('Email sent successfully:', emailResult);
 
     return NextResponse.json({ 
