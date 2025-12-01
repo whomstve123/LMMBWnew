@@ -48,8 +48,9 @@ export async function POST(request: Request) {
   // Based on actual measurements:
   // Same person, same session: 0.0000
   // Same person, different times: 77.5177, 98.1835, 105.1380
-  // Setting threshold at 120 to match same person across sessions with buffer
-  const DISTANCE_THRESHOLD = 120;
+  // Fake/photo person: ~115-120
+  // Setting threshold at 115 to match same person but reject photos
+  const DISTANCE_THRESHOLD = 115;
     let bestDistance = Infinity
     let bestMapping: any = null
     for (const mapping of allMappings || []) {
