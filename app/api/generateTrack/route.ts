@@ -86,13 +86,20 @@ export async function POST(request: Request) {
 
     if (matchedMapping) {
       // Update generated_count and last_accessed
-      await supabase
+      const { error: updateError } = await supabase
         .from('face_track_mappings')
         .update({
           generated_count: matchedMapping.generated_count + 1,
           last_accessed: new Date().toISOString(),
         })
         .eq('id', matchedMapping.id);
+      
+      if (updateError) {
+        console.error('[generateTrack] Failed to update mapping stats:', updateError);
+      } else {
+        console.log(`[generateTrack] Updated mapping id=${matchedMapping.id}, count=${matchedMapping.generated_count + 1}`);
+      }
+      
   const selectedStems = selectStemsFromHash(matchedMapping.track_id);
       return NextResponse.json({
         success: true,
