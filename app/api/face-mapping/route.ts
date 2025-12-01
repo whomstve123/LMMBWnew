@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
     let bestMatch = null;
     let bestScore = -1;
-    const threshold = 0.8; // You can tune this
+    const threshold = 0.75; // Match threshold for face recognition - same as in generateTrack
 
     if (allMappings && allMappings.length > 0) {
       for (const mapping of allMappings) {

@@ -302,8 +302,9 @@ export default function ValidatedFaceDetector({
       const l2 = Math.sqrt(median.reduce((s, v) => s + v * v, 0)) || 1
       const normalized = Array.from(median).map(v => v / l2)
 
-      // Quantize to integers to reduce floating point variance
-      const quantized = normalized.map(v => Math.round(v * 1000))
+      // Quantize to integers with higher precision to reduce collisions between different faces
+      // Using 10000x instead of 1000x for better discrimination
+      const quantized = normalized.map(v => Math.round(v * 10000))
 
       // Create deterministic JSON string
       const jsonString = JSON.stringify(quantized)

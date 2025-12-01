@@ -43,8 +43,8 @@ export async function POST(request: Request) {
     // Debug log incoming descriptor
     console.log('[generateTrack] Incoming descriptor:', intDescriptor);
     let matchedMapping = null;
-  const SIMILARITY_THRESHOLD = 0.90; // strict match threshold
-  const ADAPTIVE_THRESHOLD = 0.82; // if best similarity is here or above, accept and adapt stored descriptor
+  const SIMILARITY_THRESHOLD = 0.75; // Threshold for face match - values above this are likely the same person
+  // Removed adaptive threshold - if it doesn't meet the threshold, it's a different person
     let bestSimilarity = -1
     let bestMapping: any = null
     for (const mapping of allMappings || []) {
@@ -74,28 +74,14 @@ export async function POST(request: Request) {
       }
       if (similarity >= SIMILARITY_THRESHOLD) {
         matchedMapping = mapping
+        console.log(`[generateTrack] MATCH FOUND! mapping id=${mapping.id}, similarity=${similarity}`)
         break
       }
     }
-    // If we didn't hit the strict threshold but the best match is close, adaptively accept it and merge descriptors
-    if (!matchedMapping && bestMapping && bestSimilarity >= ADAPTIVE_THRESHOLD) {
-      console.info('[generateTrack] Adaptive accept mapping id=', bestMapping.id, 'similarity=', bestSimilarity)
-      matchedMapping = bestMapping
-      // merge descriptors: compute weighted average of stored and incoming descriptor to stabilize over time
-      try {
-        // parse stored descriptor similarly to above
-        let storedArr: number[] = []
-        if (Array.isArray(bestMapping.face_descriptor)) storedArr = bestMapping.face_descriptor.map((v: any) => Number(v))
-        else storedArr = JSON.parse(bestMapping.face_descriptor).map((v: any) => Number(v))
-        if (storedArr.length === intDescriptor.length) {
-          const existingCount = Number(bestMapping.generated_count || 1)
-          const newArr = storedArr.map((s, idx) => Math.round((s * existingCount + intDescriptor[idx]) / (existingCount + 1)))
-          // update DB stored descriptor to the new averaged descriptor
-          await supabase.from('face_track_mappings').update({ face_descriptor: newArr }).eq('id', bestMapping.id)
-        }
-      } catch (e) {
-        console.warn('[generateTrack] Failed to adapt stored descriptor for mapping id=', bestMapping.id, e)
-      }
+    
+    // Log best similarity even if no match found for debugging
+    if (!matchedMapping && bestMapping) {
+      console.log(`[generateTrack] No match found. Best similarity was ${bestSimilarity} (threshold=${SIMILARITY_THRESHOLD}) for mapping id=${bestMapping.id}`)
     }
 
     if (matchedMapping) {
