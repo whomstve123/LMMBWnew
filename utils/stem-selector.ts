@@ -4,7 +4,7 @@ import crypto from "crypto"
 const SUPABASE_URL = "https://stvydnlkuyjdcfgroqaw.supabase.co/storage/v1/object/public/stems"
 
 // Categories of audio stems
-export const STEM_CATEGORIES = ["bass", "pads", "noise", "arps", "vox", "leads"]
+export const STEM_CATEGORIES = ["bass", "pads", "noise", "arps", "vox", "leads", "drones", "other"]
 
 // File prefix for each category
 const FILE_PREFIX = {
@@ -14,6 +14,8 @@ const FILE_PREFIX = {
   arps: "arp",
   vox: "vx",
   leads: "ld",
+  drones: "hd",
+  other: "o",
 }
 
 // Number of stems per category
@@ -24,6 +26,8 @@ const STEMS_PER_CATEGORY: Record<string, number> = {
   arps: 8,
   vox: 8,
   leads: 3,
+  drones: 5,
+  other: 5,
 }
 
 /**
